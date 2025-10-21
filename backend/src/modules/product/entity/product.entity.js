@@ -3,36 +3,41 @@ import { EntitySchema } from "typeorm";
 export const productEntity = new EntitySchema({
     name: 'Product',
     tableName: 'products',
-    columns : {
-        id:{
+    columns: {
+        id: {
             primary: true,
             type: 'bigint',
-            generated:true
+            generated: true
         },
         name: {
             type: 'varchar',
             nullable: false
         },
-        description:{
-            type:'text',
-            nullable:true
+        description: {
+            type: 'text',
+            nullable: true
         },
         price: {
             type: 'decimal',
-            nullable:false
+            nullable: false
         },
-        category:{
-            type:'varchar',
-            nullable:false
+        category: {
+            type: 'varchar',
+            nullable: false
         },
         stock: {
-            type:'int',
-            nullable:false
+            type: 'int',
+            nullable: false
+        },
+        image: {
+            type: "varchar",
+            length: 255,
+            nullable: true, 
         },
         created_at: {
             type: 'timestamp',
             createDate: true,
-            nullable:false
+            nullable: false
         },
     },
 });
