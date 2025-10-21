@@ -2,9 +2,10 @@
   "name": "backend-tp",
   "version": "1.0.0",
   "description": "wenas",
-  "main": "index.js",
+  "main": "src/index.js",
+  "type": "module",
   "scripts": {
-     "start": "nodemon index.js",
+    "start": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -14,7 +15,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/francor36/Quattro/issues"
   },
@@ -23,9 +23,12 @@
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "joi": "^18.0.1",
     "mysql2": "^3.15.2",
     "nodemon": "^3.1.10",
+    "signale": "^1.4.0",
     "sqlite3": "^5.1.7",
+    "typeorm": "^0.3.27",
     "uuid": "^13.0.0"
   }
 }
