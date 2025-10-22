@@ -1,28 +1,32 @@
-import {request, response} from 'express';
-import AppDataSource from '../../providers/datasource.provider.js';
+import { request, response } from "express";
+import AppDataSource from "../../providers/datasource.provider.js";
 
+const repository = AppDataSource.getRepository("Product");
 
-const repository = AppDataSource.getRepository('Product');
-
-const create = async (req=request, res=response) => {
+const create = async (req = request, res = response) => {
+  try {
     const product = req.body;
 
-    try{
-        const newProduct = await repository.save(product);
-
-        res.status(201).json({ ok:true, result: newProduct, msg: 'Created'});
-    } catch (error){
-        res.status(400).json({ok: false, error, msg: 'Error'});
+    // Si hay imagen subida, se agrega al producto
+    if (req.file) {
+      product.image = `/uploads/${req.file.filename}`;
     }
+
+    const newProduct = await repository.save(product);
+
+    res.status(201).json({
+      ok: true,
+      result: newProduct,
+      msg: "Producto creado correctamente",
+    });
+  } catch (error) {
+    res.status(400).json({
+      ok: false,
+      error: error.message,
+      msg: "Error al crear el producto",
+    });
+  }
 };
-
-
-
-
-
-
-
-
 
 const findAll = async (req = request, res = response) => {
     try {

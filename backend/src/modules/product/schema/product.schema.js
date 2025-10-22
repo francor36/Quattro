@@ -6,6 +6,7 @@ export const createProductSchema = joi.object({
     price: joi.number().required(),
     category: joi.string().required(),
     stock: joi.number().required(),
+    image: joi.string().optional(),
 });
 
 export const updateProductSchema = joi.object({
@@ -19,4 +20,3 @@ export const updateProductSchema = joi.object({
 export const idParamSchema = joi.object({
   id: joi.string().required()
 });
-
