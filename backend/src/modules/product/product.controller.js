@@ -17,6 +17,13 @@ const create = async (req=request, res=response) => {
 };
 
 
+
+
+
+
+
+
+
 const findAll = async (req = request, res = response) => {
     try {
         const products = await repository.find();
