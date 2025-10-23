@@ -14,7 +14,7 @@ const productRoutes = Router();
 productRoutes.post(
   "/products",
   upload.single("file"),             
-  validate(createProductSchema),    
+  validateBody(createProductSchema),    
   productController.create             
 );
 
