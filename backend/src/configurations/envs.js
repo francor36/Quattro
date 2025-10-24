@@ -2,7 +2,7 @@ import joi from 'joi';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve('C:/Users/vanev/OneDrive/Escritorio/Quattro/backend/.env') });
+dotenv.config();
 
 // Definir esquema de validación de variables de entorno
 const envsSchema = joi.object({
