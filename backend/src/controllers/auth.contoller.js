@@ -1,3 +1,6 @@
+// auth.controller.js
+import { Usuario } from '../../models/user.model.js';
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -7,10 +10,7 @@ export const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ msg: 'Contraseña incorrecta' });
 
-    // Aquí va tu lógica de token o sesión
-    // ...
-
-    // 🔔 Emite notificación
+    // Emitir evento de inicio de sesión
     const io = req.app.get('io');
     io.emit('usuario:inicio', {
       mensaje: `El usuario ${user.nombre} ha iniciado sesión.`,

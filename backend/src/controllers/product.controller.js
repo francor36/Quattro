@@ -1,9 +1,12 @@
+// product.controller.js
+import { Producto } from '../../models/product.model.js';
+
 export const createProduct = async (req, res) => {
   try {
     const nuevoProducto = new Producto(req.body);
     await nuevoProducto.save();
 
-    // 🔔 Notificación WebSocket
+    // Notificación WebSocket
     const io = req.app.get('io');
     io.emit('producto:cargado', {
       mensaje: `Producto "${nuevoProducto.nombre}" cargado exitosamente`,

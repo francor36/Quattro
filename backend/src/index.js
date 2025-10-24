@@ -1,46 +1,42 @@
 import app from './app.js';
 import http from 'http';
 import { Server } from 'socket.io';
-
-//# Vamos a usar esta libreria para los logs
-import pkg from 'signale';
-//#traemos su clase constructora
-const {Signale} = pkg
+import { socketHandler } from '../sockets/handler.socket.js';
 import AppDataSource from './providers/datasource.provider.js';
+import pkg from 'signale';
 
-//instanciamos la variable app que hace uso de express
-const main = () =>{
-    //#le damos el scope
-    const logger = new Signale ({ scope: 'Main'});
-    const port = app.get('port');
+const { Signale } = pkg;
 
- //  Servidor HTTP + Socket.IO
+const main = () => {
+  const logger = new Signale({ scope: 'Main' });
+  const port = app.get('port');
+
+  // Crear servidor HTTP
   const server = http.createServer(app);
+
+  // Instanciar Socket.IO con CORS permitido para cualquier origen
   const io = new Server(server, {
     cors: {
-      origin: '*', // en producción: poner URL del frontend
+      origin: '*',
       methods: ['GET', 'POST'],
     },
   });
 
-// Guardamos io en app para usarlo en los controladores
+  // Guardar io en app para usar en los controladores
   app.set('io', io);
 
-  // 🔔 Eventos globales de conexión
+  // Conexión a la base de datos
+  AppDataSource.initialize()
+    .then(() => logger.success('Connected to Database'))
+    .catch(() => logger.error('Unable to connect to Database'));
+
+  // Manejar conexiones de Socket.IO
   io.on('connection', (socket) => {
     logger.success(`Cliente conectado: ${socket.id}`);
-
-    socket.on('disconnect', () => {
-      logger.warn(`Cliente desconectado: ${socket.id}`);
-    });
+    socketHandler(socket,io, logger);
   });
 
-// Conexión a la base de datos
-    AppDataSource.initialize()
-    .then(() => logger.log('Connected to Database'))
-    .catch(() => logger.log('Unable to connect yo Database'))
-
-// Iniciar servidor HTTP + WebSocket
+  // Iniciar servidor
   server.listen(port, () => {
     logger.start(`Server & WebSocket running on port ${port}`);
   });
