@@ -11,6 +11,11 @@ app.use(cors());
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+    req.io = req.app.get('io')
+    next();
+});
+
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 app.use('/uploads', express.static(path.join(dirname, 'uploads')));
