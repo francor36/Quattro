@@ -1,45 +1,51 @@
 import app from './app.js';
+import pkg from 'signale';
+import AppDataSource from './providers/datasource.provider.js';
+//socket
 import http from 'http';
 import { Server } from 'socket.io';
-import { socketHandler } from '../sockets/handler.socket.js';
-import AppDataSource from './providers/datasource.provider.js';
-import pkg from 'signale';
+import { envs } from './configurations/envs.js';
+import handlerSocket from './websocket/handler.socket.js';
 
-const { Signale } = pkg;
+const socketHandler = handlerSocket
+const {Signale} = pkg;
 
 const main = () => {
-  const logger = new Signale({ scope: 'Main' });
-  const port = app.get('port');
+    const logger = new Signale({ scope: 'Main' });
+    const port = app.get('port');
 
-  // Crear servidor HTTP
-  const server = http.createServer(app);
+    const server = http.createServer(app);
+    
+    const io = new Server(server, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
+    });
 
-  // Instanciar Socket.IO con CORS permitido para cualquier origen
-  const io = new Server(server, {
-    cors: {
-      origin: '*',
-      methods: ['GET', 'POST'],
-    },
-  });
+    // Conexión a la base de datos
+    AppDataSource.initialize()
+        .then(() => logger.success('Connected to Database'))
+        .catch((error) => logger.error('Unable to connect to Database:', error));
 
-  // Guardar io en app para usar en los controladores
-  app.set('io', io);
+    // Configurar Socket.IO events
+    io.on("connection", (socket) => {
+        logger.success(`Usuario conectado: ${socket.id}`);
 
-  // Conexión a la base de datos
-  AppDataSource.initialize()
-    .then(() => logger.success('Connected to Database'))
-    .catch(() => logger.error('Unable to connect to Database'));
+        socketHandler.socketHandler(socket)
+        
+        // Aquí puedes agregar más event handlers
+        socket.on('disconnect', () => {
+            logger.info(`Usuario desconectado: ${socket.id}`);
+        });
+    });
 
-  // Manejar conexiones de Socket.IO
-  io.on('connection', (socket) => {
-    logger.success(`Cliente conectado: ${socket.id}`);
-    socketHandler(socket,io, logger);
-  });
+    // Guardar io en app para usar en rutas si es necesario
+    app.set('io', io);
 
-  // Iniciar servidor
-  server.listen(port, () => {
-    logger.start(`Server & WebSocket running on port ${port}`);
-  });
+    server.listen(port, () => {
+        logger.success(`Server & WebSocket running on port ${envs.PORT}`);
+    });
 };
 
 main();
