@@ -28,13 +28,12 @@ const main = () => {
         .then(() => logger.success('Connected to Database'))
         .catch((error) => logger.error('Unable to connect to Database:', error));
 
-    // Configurar Socket.IO events
+    // aca se configuran los eventos socket.io
     io.on("connection", (socket) => {
         logger.success(`Usuario conectado: ${socket.id}`);
 
         socketHandler.socketHandler(socket)
         
-        // Aquí puedes agregar más event handlers
         socket.on('disconnect', () => {
             logger.info(`Usuario desconectado: ${socket.id}`);
         });
