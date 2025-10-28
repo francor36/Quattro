@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-
 const envsSchema = joi.object({
     PORT: joi.number().required(),
     DATABASE: joi.string().required(),
@@ -11,9 +10,11 @@ const envsSchema = joi.object({
     DB_PORT: joi.number().required(),
     DB_PASS: joi.string().allow('').optional(),
     DB_HOST: joi.string().required(),
+    JWT_SECRET: joi.string().required()
+
 }).unknown(true);
 
-const {value, error} = envsSchema.validate(process.env);
+const { value, error } = envsSchema.validate(process.env);
 
 if (error) throw new Error(error.message);
 
@@ -23,5 +24,6 @@ export const envs = {
     DB_USER: value.DB_USER,
     DB_PORT: value.DB_PORT,
     DB_PASS: value.DB_PASS,
-    DB_HOST: value.DB_HOST
+    DB_HOST: value.DB_HOST,
+    JWT_SECRET: value.JWT_SECRET,
 };
