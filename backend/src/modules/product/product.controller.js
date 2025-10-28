@@ -14,17 +14,12 @@ const create = async (req = request, res = response) => {
 
     const newProduct = await repository.save(product);
 
-    res.status(201).json({
-      ok: true,
-      result: newProduct,
-      msg: "Producto creado correctamente",
-    });
+     const io = req.app.get('io');
+    io.emit('producto_creado', { message: '¡Se creo un producto nuevo!', product: newProduct});
+
+    res.status(201).json({ ok: true, result: newProduct, msg: "Producto creado correctamente",});
   } catch (error) {
-    res.status(400).json({
-      ok: false,
-      error: error.message,
-      msg: "Error al crear el producto",
-    });
+    res.status(400).json({ ok: false, error: error.message, msg: "Error al crear el producto",});
   }
 };
 

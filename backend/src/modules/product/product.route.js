@@ -8,7 +8,6 @@ import {
 import { productController } from "./product.controller.js";
 import { upload } from "../../configurations/multer.config.js";
 
-
 const productRoutes = Router();
 
 productRoutes.post(
