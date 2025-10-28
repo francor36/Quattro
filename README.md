@@ -1,54 +1,102 @@
-💻 Proyecto Backend - Quattro E-Commerce
+📌 Quattro Backend – Presentación para Materia y Clientes E-Commerce
 
-Este proyecto es un backend completo para un e-commerce, desarrollado con Node.js, Express y SQL (MySQL/SQLite).
-Se puede usar tanto como trabajo práctico para la materia de Backend como plataforma funcional para clientes reales de e-commerce.
+1️⃣ Introducción
 
-📝 Objetivo del proyecto
+Este proyecto es un backend en desarrollo para un e-commerce, desarrollado en Node.js, Express y SQL.
+Sirve tanto como trabajo de la materia Backend.
+
+2️⃣ Objetivos del proyecto
 
 💾 Administrar usuarios y productos
 
-🔒 Autenticación y seguridad con JWT y contraseñas encriptadas
+🔒 Autenticación segura con JWT
 
-📦 Gestión de productos: alta, baja, modificación y listado
+🖼 Subida de imágenes para productos
 
-🖼 Carga de archivos para imágenes de productos
+⚡ Notificaciones en tiempo real con Socket.IO
 
-⚡ Notificaciones en tiempo real usando Socket.IO
+🛠 Validación de datos con Joi
 
-🛠 Validaciones de datos con Joi para evitar errores en la base de datos
+📦 Gestión de productos: crear, actualizar, eliminar, listar
 
-👨‍🏫 Como trabajo de materia Backend
+3️⃣ Usuarios
 
-Permite demostrar manejo de rutas, controladores y middlewares.
+👤 Registro de usuarios (/users/register)
 
-Integra bases de datos SQL, usando TypeORM para conexión y consultas.
+🔑 Login (/users/login) → obtiene JWT
 
-Implementa autenticación segura con JWT y hashing de contraseñas.
+📄 Ver usuario por ID (/users/:id) → protegido
 
-Valida datos con Joi, asegurando que no se ingresen datos inválidos.
+❌ Borrar usuario (/users/:id) → protegido
 
-Usa Multer para subir archivos, como imágenes de productos.
+4️⃣ Productos
 
-Permite probar todo en Postman, haciendo el flujo completo de registro → login → operaciones protegidas.
+🛍 Crear producto (POST /products)→ protegido
 
-🛒 Como solución para clientes e-commerce
+📃 Listar productos (GET /products)
 
-👤 Usuarios: pueden registrarse, iniciar sesión y ver sus datos.
+🔍 Ver producto (GET /products/:id)
 
-🛍 Productos: los administradores pueden crear, actualizar, eliminar y listar productos.
+✏️ Actualizar producto (PUT /products/:id) → protegido
 
-🖼 Imágenes: cada producto puede tener imágenes asociadas.
+🗑 Eliminar producto (DELETE /products/:id) → protegido
 
-⚡ Tiempo real: se pueden notificar cambios de productos a otros clientes en tiempo real (Socket.IO).
+5️⃣ Carga de archivos
 
-🔐 Seguridad: solo los usuarios con token válido pueden acceder a ciertas rutas protegidas.
+🖼 Imágenes de productos usando Multer
 
-💾 Base de datos SQL: almacena toda la información de forma persistente y estructurada.
+Archivos guardados en /uploads
 
-📦 Funcionalidades principales
-Módulo	Funcionalidad	Observaciones
-Usuarios	Registro, login, ver usuario, borrar usuario	JWT + bcrypt
-Productos	Crear, leer, actualizar, eliminar productos	Validaciones + subida de imágenes
-Archivos	Subida de imágenes con Multer	Guardadas en /uploads
-Socket.IO	Notificaciones en tiempo real	Para nuevos productos o cambios
-Validación	Joi para todos los schemas	Evita datos inválidos
+6️⃣ Socket.IO
+
+⚡ Comunicación en tiempo real
+
+Ejemplo: notificación de nuevo producto agregado
+
+socket.on('new-product', (product) => {
+  console.log('Nuevo producto:', product);
+});
+
+7️⃣ Seguridad
+
+🔐 JWT para proteger rutas sensibles
+
+🔑 Contraseñas encriptadas con bcrypt
+
+Validación de datos con Joi
+
+8️⃣ Base de datos
+
+💾 MySQL / SQLite
+
+Tablas para usuarios y productos
+
+Relaciones claras y persistentes
+
+9️⃣ Tecnologías
+Categoría	Tecnologías
+Backend	Node.js, Express
+DB	TypeORM, MySQL / SQLite
+Seguridad	JWT, bcrypt
+Validación	Joi
+Archivos	Multer
+Tiempo real	Socket.IO
+Utilidades	dotenv, cors, uuid, nodemon, signale
+🔧 Scripts útiles
+"scripts": {
+  "start": "node src/index.js",
+  "dev": "nodemon src/index.js"
+}
+
+
+npm run start → desarrollo con reinicio automático
+
+npm start → producción
+
+10️⃣ Beneficios
+
+✅ Para materia: demuestra backend, seguridad y bases de datos
+
+✅ Para cliente: plataforma funcional para e-commerce
+
+✅ Escalable: se puede agregar carrito de compras, pagos, notificaciones, etc.
