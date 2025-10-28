@@ -1,4 +1,4 @@
-import { passport } from '../configurations/passport.js';
+import  passport  from '../configurations/passport.js';
 
 function authMiddleware(req, res, next) {
     //OBTENCION DEL TOKEN DESDE EL REQ EL CUAL VA A USAR PASAPORTE
