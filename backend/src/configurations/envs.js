@@ -1,8 +1,10 @@
 import joi from 'joi';
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
 
+// Definir esquema de validación de variables de entorno
 const envsSchema = joi.object({
     PORT: joi.number().required(),
     DATABASE: joi.string().required(),
@@ -14,10 +16,12 @@ const envsSchema = joi.object({
 
 }).unknown(true);
 
-const { value, error } = envsSchema.validate(process.env);
+// Validar variables de entorno
+const {value, error} = envsSchema.validate(process.env);
 
 if (error) throw new Error(error.message);
 
+// Exportar variables de entorno ya validadas
 export const envs = {
     PORT: value.PORT,
     DATABASE: value.DATABASE,
