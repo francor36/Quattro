@@ -100,3 +100,5 @@ npm start → producción
 ✅ Para cliente: plataforma funcional para e-commerce
 
 ✅ Escalable: se puede agregar carrito de compras, pagos, notificaciones, etc.
+
+<img width="551" height="258" alt="Diagrama de clase" src="https://github.com/user-attachments/assets/51fb3f7b-de70-49a0-81e2-43c3035f291e" />
