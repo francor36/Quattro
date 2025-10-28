@@ -102,3 +102,9 @@ npm start → producción
 ✅ Escalable: se puede agregar carrito de compras, pagos, notificaciones, etc.
 
 <img width="551" height="258" alt="Diagrama de clase" src="https://github.com/user-attachments/assets/51fb3f7b-de70-49a0-81e2-43c3035f291e" />
+
+<img width="918" height="353" alt="MER" src="https://github.com/user-attachments/assets/804e14a4-306c-41e0-8a21-23562d9d561c" />
+
+<img width="449" height="222" alt="diagrama de caso de uso" src="https://github.com/user-attachments/assets/2595a7f8-6bd9-437f-9a45-0aa1264aabc8" />
+
+<img width="581" height="597" alt="image" src="https://github.com/user-attachments/assets/0a7d4ff5-16fa-44b1-9176-1b370131c091" />
