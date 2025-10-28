@@ -14,7 +14,7 @@ const create = async (req = request, res = response) => {
 
     const newProduct = await repository.save(product);
 
-     const io = req.app.get('io');
+    const io = req.app.get('io');
     io.emit('producto_creado', { message: '¡Se creo un producto nuevo!', product: newProduct});
 
     res.status(201).json({ ok: true, result: newProduct, msg: "Producto creado correctamente",});

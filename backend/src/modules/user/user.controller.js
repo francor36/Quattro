@@ -4,7 +4,7 @@ import { envs } from '../../configurations/envs.js';
 import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createUserSchema } from './schema/user.schema.js';
-// Tu schema Joi
+
 
 const repository = AppDataSource.getRepository('User');
 
@@ -18,6 +18,9 @@ const register = async (req = request, res = response) => {
     const hashPassword = await bcrypt.hash(password, 12);
 
     const newUser = await repository.save({ ...user, password: hashPassword });
+
+    const io = req.app.get('io');
+    io.emit('register', { message: '¡Se registro un nuevo usuario!', user: newUser.nombre +" "+ newUser.apellido});
 
     res.status(201).json({
       ok: true,
