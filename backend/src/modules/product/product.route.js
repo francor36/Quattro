@@ -7,6 +7,8 @@ import {
 } from "./schema/product.schema.js";
 import { productController } from "./product.controller.js";
 import { upload } from "../../configurations/multer.config.js";
+import  authMiddleware  from "../../middlewares/auth.middleware.js";
+
 
 const productRoutes = Router();
 
