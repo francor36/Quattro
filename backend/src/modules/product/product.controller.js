@@ -4,23 +4,24 @@ import AppDataSource from "../../providers/datasource.provider.js";
 const repository = AppDataSource.getRepository("Product");
 
 const create = async (req = request, res = response) => {
-  try {
-    const product = req.body;
+    try {
+        const product = req.body;
+        console.log(req.file);  // <--- ESTA LÍNEA TE DICE TODO
+        console.log(req.body);
+        // Si hay imagen subida, se agrega al producto
+        if (req.file) {
+            product.image = `/uploads/${req.file.filename}`;
+        }
 
-    // Si hay imagen subida, se agrega al producto
-    if (req.file) {
-      product.image = `/uploads/${req.file.filename}`;
+        const newProduct = await repository.save(product);
+
+        const io = req.app.get('io');
+        io.emit('producto_creado', { message: '¡Se creo un producto nuevo!', product: newProduct });
+
+        res.status(201).json({ ok: true, result: newProduct, msg: "Producto creado correctamente", });
+    } catch (error) {
+        res.status(400).json({ ok: false, error: error.message, msg: "Error al crear el producto", });
     }
-
-    const newProduct = await repository.save(product);
-
-     const io = req.app.get('io');
-    io.emit('producto_creado', { message: '¡Se creo un producto nuevo!', product: newProduct});
-
-    res.status(201).json({ ok: true, result: newProduct, msg: "Producto creado correctamente",});
-  } catch (error) {
-    res.status(400).json({ ok: false, error: error.message, msg: "Error al crear el producto",});
-  }
 };
 
 const findAll = async (req = request, res = response) => {
@@ -37,7 +38,7 @@ const findOne = async (req = request, res = response) => {
     const { id } = req.params;
 
     try {
-        const product = await repository.findBy({id: id});
+        const product = await repository.findBy({ id: id });
         if (!product) {
             return res.status(404).json({ ok: false, msg: 'Product not found' });
         }

@@ -6,6 +6,8 @@ import { envs } from './configurations/envs.js';
 import productRoutes from './modules/product/product.route.js';
 import userRoutes from './modules/user/user.routes.js'; // <-- importamos
 import passport from './configurations/passport.js';
+import cartRoutes from './modules/cart/cart.route.js';
+
 
 const app = express();
 
@@ -26,6 +28,8 @@ app.set('port', envs.PORT);
 // Montamos rutas
 app.use(productRoutes);
 app.use('/users', userRoutes); // <-- montamos rutas de usuario
+//cart
+app.use('/cart', cartRoutes); // prefijo
 
 app.use(passport.initialize());
 

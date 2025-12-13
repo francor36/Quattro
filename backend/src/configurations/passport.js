@@ -14,18 +14,23 @@ passport.use(
     new Strategy(opts, async (payload, done) => {
         try {
             const repo = AppDataSource.getRepository('User');
-            //Otencion de datos mediante req en este req.user
-            //la forma de obtencion es mediante una consulta a la base de datos
-            const user = await repo.findOne({ where: { id: payload.id } })
+
+            // 👇 convertir id a número si tu DB usa bigint
+            const userId = Number(payload.id);
+
+            const user = await repo.findOne({ where: { id: userId } });
+
+            // Log para verificar
+            console.log(">>> Usuario encontrado en passport:", user);
+
             if (!user) {
-                //SI EL USUARIO NO EXISTE EL PASAPORTE ES INVALIDO
                 return done(null, false);
             }
+
             return done(null, user);
         } catch (err) {
             return done(err, false);
         }
-
     })
 );
 export default passport;

@@ -4,20 +4,23 @@ import { envs } from '../../configurations/envs.js';
 import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { createUserSchema } from './schema/user.schema.js';
-// Tu schema Joi
 
 const repository = AppDataSource.getRepository('User');
 
 // ===================== REGISTRO =====================
 const register = async (req = request, res = response) => {
   try {
-    // Validar body con Joi
     await createUserSchema.validateAsync(req.body, { abortEarly: false });
 
-    const { password, ...user } = req.body;
+    const { password, role = "CLIENT", ...user } = req.body;
+
     const hashPassword = await bcrypt.hash(password, 12);
 
-    const newUser = await repository.save({ ...user, password: hashPassword });
+    const newUser = await repository.save({
+      ...user,
+      password: hashPassword,
+      role,
+    });
 
     res.status(201).json({
       ok: true,
@@ -40,7 +43,11 @@ const login = async (req = request, res = response) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ ok: false, message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, envs.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, rol: user.rol },
+      envs.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.json({
       ok: true,
@@ -52,7 +59,6 @@ const login = async (req = request, res = response) => {
   }
 };
 
-// ===================== BUSCAR USUARIO =====================
 const getUserById = async (req = request, res = response) => {
   try {
     const { id } = req.params;
@@ -65,7 +71,6 @@ const getUserById = async (req = request, res = response) => {
   }
 };
 
-// ===================== BORRAR USUARIO =====================
 const deleteUser = async (req = request, res = response) => {
   try {
     const { id } = req.params;

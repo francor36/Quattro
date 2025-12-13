@@ -7,16 +7,19 @@ import {
 } from "./schema/product.schema.js";
 import { productController } from "./product.controller.js";
 import { upload } from "../../configurations/multer.config.js";
-import  authMiddleware  from "../../middlewares/auth.middleware.js";
-
+import authMiddleware from "../../middlewares/auth.middleware.js";
+import isAdmin from "../../middlewares/isAdmin.js";
+import { authorizeRole } from "../../middlewares/role.middleware.js";
 
 const productRoutes = Router();
 
 productRoutes.post(
   "/products",
+  authMiddleware,         
+  isAdmin,                
   upload.single("file"),
   validateBody(createProductSchema),
-  authMiddleware, productController.create
+  productController.create
 );
 
 productRoutes.get('/products',
@@ -31,12 +34,12 @@ productRoutes.get('/products/:id',
 productRoutes.put('/products/:id',
   validateParams(idParamSchema),
   validateBody(updateProductSchema),
-  authMiddleware,productController.update
+  authMiddleware, productController.update
 );
 
 productRoutes.delete('/products/:id',
   validateParams(idParamSchema),
-  authMiddleware,productController.remove
+  authMiddleware, productController.remove
 );
 
 export default productRoutes;
