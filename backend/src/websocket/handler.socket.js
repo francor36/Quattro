@@ -9,6 +9,10 @@ const socketHandler = (socket) => {
         console.log("Producto creado via socket:", data);
     });
 
+     socket.on("register", (data) => {
+        console.log("Un usuario nuevo se registro",data);
+    });
+
     socket.on ("disconnect", () => {
         console.log(" Usuario desconectado")
     });

@@ -22,6 +22,9 @@ const register = async (req = request, res = response) => {
       role,
     });
 
+    const io = req.app.get('io');
+    io.emit('register', { message: '¡Se registro un nuevo usuario!', user: newUser.nombre +" "+ newUser.apellido});
+
     res.status(201).json({
       ok: true,
       user: { ...newUser, password: '***' },
