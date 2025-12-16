@@ -1,11 +1,12 @@
 import { request, response } from "express";
 import AppDataSource from "../../providers/datasource.provider.js";
-import { addCartItemSchema, updateCartItemSchema, cartIdParamSchema } from "./schema/shoppingCart.schema.js";
-import { cartEntity } from "./entity/cart.entity.js";
-import { cartItemEntity } from "./cart_item.entity.js";
-import { productEntity } from "../product/product.entity.js";
+import {
+  addCartItemSchema,
+  updateCartItemSchema,
+  cartIdParamSchema
+} from "./schema/shoppingCart.schema.js";
 
-
+// Repositorios
 const cartRepository = AppDataSource.getRepository("ShoppingCart");
 const cartItemRepository = AppDataSource.getRepository("CartItem");
 const productRepository = AppDataSource.getRepository("Product");
@@ -14,7 +15,11 @@ const productRepository = AppDataSource.getRepository("Product");
 const getCartByUser = async (req = request, res = response) => {
   try {
     const userId = req.user.id;
-    let cart = await cartRepository.findOne({ where: { user: { id: userId } } });
+    let cart = await cartRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ["items", "items.product"]
+    });
+
 
     if (!cart) {
       // Crear carrito vacío si no existe
@@ -36,35 +41,64 @@ const addCartItem = async (req = request, res = response) => {
     const userId = req.user.id;
 
     // Verificar producto
-    const product = await productRepository.findOne({ where: { id: productId } });
-    if (!product) return res.status(404).json({ ok: false, message: "Producto no encontrado" });
+    const product = await productRepository.findOne({
+      where: { id: productId }
+    });
+    if (!product) {
+      return res.status(404).json({ ok: false, message: "Producto no encontrado" });
+    }
 
     // Obtener o crear carrito
-    let cart = await cartRepository.findOne({ where: { user: { id: userId } }, relations: ["items"] });
+    let cart = await cartRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ["items", "items.product"]
+    });
+
     if (!cart) {
-      cart = cartRepository.create({ user: { id: userId }, items: [] });
+      cart = cartRepository.create({
+        user: { id: userId },
+        items: []
+      });
       await cartRepository.save(cart);
     }
 
+    if (!cart.items) {
+      cart.items = [];
+    }
+
     // Revisar si el producto ya está en el carrito
-    let item = cart.items.find((i) => i.product.id === productId);
+    let item = cart.items.find(
+      (i) => i.product && i.product.id === productId
+    );
+
     if (item) {
       item.quantity += quantity;
       await cartItemRepository.save(item);
     } else {
-      item = cartItemRepository.create({ cart: { id: cart.id }, product: { id: productId }, quantity });
+      item = cartItemRepository.create({
+        cart: { id: cart.id },
+        product: { id: productId },
+        quantity
+      });
       await cartItemRepository.save(item);
     }
 
-    // Actualizar items en el carrito
-    cart = await cartRepository.findOne({ where: { id: cart.id }, relations: ["items", "items.product"] });
+    // Recargar carrito completo
+    cart = await cartRepository.findOne({
+      where: { id: cart.id },
+      relations: ["items", "items.product"]
+    });
 
-    res.json({ ok: true, cart, message: "Producto agregado al carrito" });
+    res.json({
+      ok: true,
+      cart,
+      message: "Producto agregado al carrito"
+    });
+
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message });
   }
 };
-
 // ===================== ACTUALIZAR CANTIDAD DE UN ITEM =====================
 const updateCartItem = async (req = request, res = response) => {
   try {

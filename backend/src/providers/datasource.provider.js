@@ -2,7 +2,8 @@ import { DataSource } from "typeorm";
 import { envs } from "../configurations/envs.js";
 import { productEntity } from "../modules/product/entity/product.entity.js";
 import { userEntity } from "../modules/user/entity/user.entity.js";
-import { cartEntity } from "../modules/cart/entity/cart.entity.js";
+import { cartEntity } from "../modules/cart/entity/ShoppingCart.entity.js";
+import { cartItemEntity } from "../modules/cart/entity/cart_item.entity.js";
 
 const AppDataSource = new DataSource({
     type: 'mysql', //# Tipo de bd que se va a usar
@@ -16,7 +17,7 @@ const AppDataSource = new DataSource({
 
     synchronize: true, //# sincroniza automaticamente las entidades con la DB
     logging: false, //# si quieren ver los logs se habilita esta propiedad
-    entities: [productEntity, userEntity], //aca se agregan las entidades
+    entities: [productEntity, userEntity,cartEntity,cartItemEntity], //aca se agregan las entidades
 });
 
 export default AppDataSource
