@@ -3,9 +3,9 @@
 
 </script>
 <template>
-    <div class="w-full flex items-center justify-between bg-[#0e516c] p-4">
-        <!-- Logo -->
-        <div class="flex shrink-0 items-center max-w-33 pl-6">
+    <div class="w-full flex items-center justify-between bg-[#0e516c] p-4 font-serif">
+
+        <div class="flex shrink-0 items-center max-w-28 pl-10">
             <img 
                 src="../assets/Imagen de WhatsApp 2025-09-05 a las 22.42.53_5e24845e.jpg" 
                 alt="QuattroLogo"
@@ -59,7 +59,5 @@
 </template>
 
 <script>
-export default {
-    name: 'NavbarComponent'
-}
+
 </script>
