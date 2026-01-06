@@ -32,7 +32,6 @@
           </ul>
         </div>
 
-        <!-- Contacto -->
         <div>
           <h3 class="text-lg font-bold mb-4" style="color: #fff1da">Contacto</h3>
           <ul class="space-y-3">
@@ -59,7 +58,6 @@
           </ul>
         </div>
 
-        <!-- Redes Sociales -->
         <div>
           <h3 class="text-lg font-bold mb-4" style="color: #fff1da">Síguenos</h3>
           <div class="flex gap-4">
@@ -89,10 +87,9 @@
         </div>
       </div>
 
-      <!-- Copyright -->
       <div class="border-t mt-8 pt-6" style="border-color: #fff1da">
         <p class="text-center text-sm" style="color: #fff1da">
-          © 2026 Quatro Guitarras Del Valle. Todos los derechos reservados.
+          © 2026 Quatro Guitarras. Todos los derechos reservados.
         </p>
       </div>
     </div>
