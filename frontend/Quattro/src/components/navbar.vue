@@ -24,11 +24,11 @@
             </router-link>
             
             <router-link 
-                to="/guitarras" 
+                to="/productos" 
                 class="text-[#fff1da] hover:bg-[#fff1da] hover:text-[#0e516c] font-bold transition-colors duration-200 rounded-4xl p-4 text-xl"
                 active-class="text-[#ffcc00]"
             >
-                Guitarras
+                Productos
             </router-link>
             
             <router-link 
@@ -40,20 +40,16 @@
             </router-link>
             
             <router-link 
-                to="/accesorios" 
-                class="text-[#fff1da] hover:bg-[#fff1da] hover:text-[#0e516c] font-bold transition-colors duration-200 rounded-4xl p-4 text-xl"
-                active-class="text-[#ffcc00]"
-            >
-                Accesorios
-            </router-link>
-            
-            <router-link 
                 to="/contacto" 
                 class="text-[#fff1da] hover:bg-[#fff1da] hover:text-[#0e516c] font-bold transition-colors duration-200 rounded-4xl p-4 text-xl"
                 active-class="text-[#ffcc00]"
             >
                 Contacto
             </router-link>
+
+            <button class="">
+
+            </button>
         </nav>
     </div>
 </template>
