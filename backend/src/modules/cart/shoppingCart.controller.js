@@ -15,15 +15,18 @@ const productRepository = AppDataSource.getRepository("Product");
 const getCartByUser = async (req = request, res = response) => {
   try {
     const userId = req.user.id;
+
     let cart = await cartRepository.findOne({
       where: { user: { id: userId } },
       relations: ["items", "items.product"]
     });
 
-
+    // Si no existe, crear carrito vacío
     if (!cart) {
-      // Crear carrito vacío si no existe
-      cart = cartRepository.create({ user: { id: userId }, items: [] });
+      cart = cartRepository.create({
+        user: { id: userId },
+        items: []
+      });
       await cartRepository.save(cart);
     }
 
@@ -37,18 +40,23 @@ const getCartByUser = async (req = request, res = response) => {
 const addCartItem = async (req = request, res = response) => {
   try {
     await addCartItemSchema.validateAsync(req.body, { abortEarly: false });
+
     const { productId, quantity } = req.body;
     const userId = req.user.id;
 
-    // Verificar producto
+    // 🔎 Verificar producto
     const product = await productRepository.findOne({
       where: { id: productId }
     });
+
     if (!product) {
-      return res.status(404).json({ ok: false, message: "Producto no encontrado" });
+      return res.status(404).json({
+        ok: false,
+        message: "Producto no encontrado"
+      });
     }
 
-    // Obtener o crear carrito
+    // 🛒 Obtener o crear carrito
     let cart = await cartRepository.findOne({
       where: { user: { id: userId } },
       relations: ["items", "items.product"]
@@ -62,28 +70,27 @@ const addCartItem = async (req = request, res = response) => {
       await cartRepository.save(cart);
     }
 
-    if (!cart.items) {
-      cart.items = [];
-    }
-
-    // Revisar si el producto ya está en el carrito
+    // 🔁 Ver si el producto ya está en el carrito
     let item = cart.items.find(
-      (i) => i.product && i.product.id === productId
+      (i) => i.product.id === productId
     );
 
     if (item) {
+      // Si existe → sumar cantidad
       item.quantity += quantity;
       await cartItemRepository.save(item);
     } else {
+      // Si NO existe → crear item nuevo (CLAVE: pasar el objeto cart)
       item = cartItemRepository.create({
-        cart: { id: cart.id },
-        product: { id: productId },
-        quantity
+        cart: cart,         // 👈 ESTO EVITA cart_id NULL
+        product: product,
+        quantity: quantity
       });
+
       await cartItemRepository.save(item);
     }
 
-    // Recargar carrito completo
+    // 🔄 Devolver carrito actualizado
     cart = await cartRepository.findOne({
       where: { id: cart.id },
       relations: ["items", "items.product"]
@@ -91,28 +98,37 @@ const addCartItem = async (req = request, res = response) => {
 
     res.json({
       ok: true,
-      cart,
-      message: "Producto agregado al carrito"
+      message: "Producto agregado al carrito",
+      cart
     });
-
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message });
   }
 };
+
 // ===================== ACTUALIZAR CANTIDAD DE UN ITEM =====================
 const updateCartItem = async (req = request, res = response) => {
   try {
     const { id } = req.params;
+
     await updateCartItemSchema.validateAsync(req.body, { abortEarly: false });
     await cartIdParamSchema.validateAsync({ id });
 
     const { quantity } = req.body;
 
-    const item = await cartItemRepository.findOne({ where: { id }, relations: ["cart"] });
-    if (!item) return res.status(404).json({ ok: false, message: "Item no encontrado" });
+    const item = await cartItemRepository.findOne({
+      where: { id },
+      relations: ["cart", "cart.user"]
+    });
 
-    // Solo puede actualizar su propio carrito
-    if (item.cart.user.id !== req.user.id) return res.status(403).json({ ok: false, message: "Acceso denegado" });
+    if (!item) {
+      return res.status(404).json({ ok: false, message: "Item no encontrado" });
+    }
+
+    // Seguridad: solo el dueño del carrito
+    if (item.cart.user.id !== req.user.id) {
+      return res.status(403).json({ ok: false, message: "Acceso denegado" });
+    }
 
     item.quantity = quantity;
     await cartItemRepository.save(item);
@@ -129,10 +145,18 @@ const removeCartItem = async (req = request, res = response) => {
     const { id } = req.params;
     await cartIdParamSchema.validateAsync({ id });
 
-    const item = await cartItemRepository.findOne({ where: { id }, relations: ["cart"] });
-    if (!item) return res.status(404).json({ ok: false, message: "Item no encontrado" });
+    const item = await cartItemRepository.findOne({
+      where: { id },
+      relations: ["cart", "cart.user"]
+    });
 
-    if (item.cart.user.id !== req.user.id) return res.status(403).json({ ok: false, message: "Acceso denegado" });
+    if (!item) {
+      return res.status(404).json({ ok: false, message: "Item no encontrado" });
+    }
+
+    if (item.cart.user.id !== req.user.id) {
+      return res.status(403).json({ ok: false, message: "Acceso denegado" });
+    }
 
     await cartItemRepository.remove(item);
 
@@ -146,5 +170,5 @@ export const cartController = {
   getCartByUser,
   addCartItem,
   updateCartItem,
-  removeCartItem,
+  removeCartItem
 };

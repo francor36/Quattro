@@ -7,8 +7,8 @@ import productRoutes from './modules/product/product.route.js';
 import userRoutes from './modules/user/user.routes.js'; // <-- importamos
 import passport from './configurations/passport.js';
 import cartRoutes from './modules/cart/cart.route.js';
-
-
+import orderRoutes from "./modules/order/orders.routes.js";
+import mpRoutes  from "./modules/payments/routes/mp.routes.js";
 const app = express();
 
 app.use(cors());
@@ -31,6 +31,11 @@ app.use('/users', userRoutes); // <-- montamos rutas de usuario
 //cart
 app.use('/cart', cartRoutes); // prefijo
 
+app.use("/orders", orderRoutes);
+app.use("/api/payments", mpRoutes);
+app.use("/orders", orderRoutes);
+
 app.use(passport.initialize());
+console.log("MP TOKEN:", envs.MP_ACCESS_TOKEN);
 
 export default app;
