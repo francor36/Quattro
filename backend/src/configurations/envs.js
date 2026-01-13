@@ -17,7 +17,7 @@ const envsSchema = joi.object({
 }).unknown(true);
 
 // Validar variables de entorno
-const {value, error} = envsSchema.validate(process.env);
+const { value, error } = envsSchema.validate(process.env);
 
 if (error) throw new Error(error.message);
 
@@ -30,4 +30,5 @@ export const envs = {
     DB_PASS: value.DB_PASS,
     DB_HOST: value.DB_HOST,
     JWT_SECRET: value.JWT_SECRET,
+    MP_ACCESS_TOKEN: process.env.MP_ACCESS_TOKEN,
 };

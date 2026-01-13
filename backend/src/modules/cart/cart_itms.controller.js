@@ -11,59 +11,14 @@ const cartItemRepository = AppDataSource.getRepository("CartItem");
 const productRepository = AppDataSource.getRepository("Product");
 
 // ... tus métodos getCartByUser, addCartItem, updateCartItem, removeCartItem
-export const addCartItem = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { productId, quantity } = req.body;
+let item = await cartItemRepository.findOne({
+  where: {
+    cart: { id: cart.id },
+    product: { id: productId }
+  },
+  relations: ["product"]
+});
 
-    // 1️⃣ Buscar producto
-    const product = await productRepository.findOne({
-      where: { id: productId }
-    });
-
-    if (!product) {
-      return res.status(404).json({ message: "Producto no encontrado" });
-    }
-
-    // 2️⃣ Buscar carrito del usuario
-    let cart = await cartRepository.findOne({
-      where: { user: { id: userId } },
-      relations: ["items"]
-    });
-
-    // 3️⃣ Si no existe, crearlo
-    if (!cart) {
-      cart = cartRepository.create({
-        user: { id: userId },
-        items: []
-      });
-      await cartRepository.save(cart);
-    }
-
-    // 4️⃣ Ver si el producto ya está en el carrito
-    const existingItem = cart.items.find(
-      item => item.product.id === product.id
-    );
-
-    if (existingItem) {
-      existingItem.quantity += quantity;
-      await cartItemRepository.save(existingItem);
-    } else {
-      const newItem = cartItemRepository.create({
-        cart,
-        product,
-        quantity
-      });
-      await cartItemRepository.save(newItem);
-    }
-
-    return res.status(201).json({ message: "Producto agregado al carrito" });
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Error al agregar producto" });
-  }
-};
 export const updateCartItem = async (req, res) => {
   try {
     const { id } = req.params;
