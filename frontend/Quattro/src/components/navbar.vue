@@ -1,7 +1,22 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 
+const usuarioLogueado = ref(false);
+const nombreUsuario = ref('');
 
+const handleLogin = () => {
+  // TODO: Implementar lógica de login
+  console.log('Abrir modal de login');
+  // router.push('/login');
+};
+
+const handleLogout = () => {
+  usuarioLogueado.value = false;
+  nombreUsuario.value = '';
+  console.log('Usuario deslogueado');
+};
 </script>
+
 <template>
     <div class="w-full flex items-center justify-between bg-[#0e516c] p-4 font-serif">
 
@@ -47,13 +62,31 @@
                 Contacto
             </router-link>
 
-            <button class="">
+            <!-- Botón de Login / Usuario -->
+            <div v-if="!usuarioLogueado" class="pr-10">
+                <button 
+                    @click="handleLogin"
+                    class="flex items-center gap-2 bg-[#fff1da] text-[#0e516c] hover:bg-[#0e516c] hover:text-[#fff1da] font-bold transition-all duration-200 rounded-full px-6 py-3 border-2 border-[#fff1da]"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Ingresar
+                </button>
+            </div>
 
-            </button>
+            <div v-else class="relative pr-10">
+                <button 
+                    class="flex items-center gap-2 bg-[#fff1da] text-[#0e516c] hover:bg-[#0e516c] hover:text-[#fff1da] font-bold transition-all duration-200 rounded-full px-6 py-3 border-2 border-[#fff1da]"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>{{ nombreUsuario || 'Usuario' }}</span>
+                </button>
+            </div>
         </nav>
     </div>
 </template>
-
-<script>
-
-</script>
