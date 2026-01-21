@@ -2,13 +2,13 @@ import AppDataSource from "../../providers/datasource.provider.js";
 
 const paymentRepository = AppDataSource.getRepository("Payment");
 
-// Constantes para validación (puedes moverlas a un archivo separado si crecen)
-const VALID_PAYMENT_STATUSES = ['pending', 'approved', 'rejected', 'cancelled']; // Ajusta según tu enum en la DB
+// Constantes para validación
+const VALID_PAYMENT_STATUSES = ['pending', 'approved', 'rejected', 'cancelled'];
 
 /**
  * Crea un pago en la DB de forma idempotente.
  * Si el pago ya existe (basado en mpPaymentId), devuelve el existente.
- * Recibe: orderId (string, requerido), mpPaymentId (string, requerido), paymentMethod (string, requerido), amount (number positivo), status (string válido).
+ * Recibe: orderId (number, requerido), mpPaymentId (string, requerido), paymentMethod (string, requerido), amount (number positivo), status (string válido).
  * Retorna: El objeto Payment creado o existente.
  * Lanza error si hay validaciones fallidas o problemas en la DB.
  */
@@ -19,9 +19,9 @@ export const createPayment = async ({
   amount,
   status,
 }) => {
-  // Validaciones de entrada
-  if (!orderId || typeof orderId !== 'string') {
-    throw new Error('orderId es requerido y debe ser un string');
+  // Validaciones de entrada - AJUSTADO: orderId ahora acepta number también
+  if (!orderId || (typeof orderId !== 'string' && typeof orderId !== 'number')) {
+    throw new Error('orderId es requerido y debe ser un string o number');
   }
   if (!mpPaymentId || typeof mpPaymentId !== 'string') {
     throw new Error('mpPaymentId es requerido y debe ser un string');
@@ -37,23 +37,39 @@ export const createPayment = async ({
   }
 
   try {
-    // Usar upsert para idempotencia robusta (evita race conditions si la DB tiene constraint único en mp_payment_id)
+    // Verificar si el pago ya existe (idempotencia)
+    const existingPayment = await paymentRepository.findOne({
+      where: { mp_payment_id: mpPaymentId }
+    });
+
+    if (existingPayment) {
+      console.log('⚠️ Pago ya registrado, devolviendo existente:', mpPaymentId);
+      return existingPayment;
+    }
+
+    // Crear nuevo pago
     const paymentData = {
-      order_id: orderId,
+      order_id: String(orderId), // Asegurar que sea string
       mp_payment_id: mpPaymentId,
       payment_method_id: paymentMethod,
       amount,
       status,
+      payment_date: new Date(), // Agregar fecha de pago
     };
 
-    // Upsert: inserta si no existe, actualiza si existe (basado en mp_payment_id)
-    const result = await paymentRepository.upsert(paymentData, ['mp_payment_id']);
+    console.log('💾 Insertando nuevo pago:', paymentData);
+
+    // Crear e insertar el nuevo pago
+    const payment = paymentRepository.create(paymentData);
+    const savedPayment = await paymentRepository.save(payment);
     
-    // Retorna el pago (upsert devuelve un array, toma el primero)
-    return result.generatedMaps ? result.generatedMaps[0] : await paymentRepository.findOneBy({ mp_payment_id: mpPaymentId });
+    console.log('✅ Pago guardado exitosamente:', savedPayment.id);
+    return savedPayment;
+
   } catch (error) {
     console.error('Error creando pago:', error.message);
-    // No expongas detalles internos en producción; lanza un error genérico
-    throw new Error('No se pudo crear el pago. Verifica los datos e intenta nuevamente.');
+    console.error('Stack completo:', error.stack);
+    // Lanzar error con más contexto
+    throw new Error(`No se pudo crear el pago: ${error.message}`);
   }
 };
