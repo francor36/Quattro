@@ -50,18 +50,20 @@ const findOne = async (req = request, res = response) => {
 
 
 const update = async (req = request, res = response) => {
-    const { id } = req.params;
-    const updates = req.body;
+  const { id } = req.params;
+  const updates = req.body;
 
-    try {
-        const updatedProduct = await repository.update(id, updates);
-        if (!updatedProduct) {
-            return res.status(404).json({ ok: false, msg: 'Product not found' });
-        }
-        res.status(200).json({ ok: true, result: updatedProduct, msg: 'Product updated successfully' });
-    } catch (error) {
-        res.status(400).json({ ok: false, error, msg: 'Error updating product' });
+  try {
+    // Si se sube una nueva imagen
+    if (req.file) {
+      updates.image = req.file.filename;
     }
+
+    const updatedProduct = await repository.update(id, updates);
+    res.status(200).json({ ok: true, result: updatedProduct, msg: 'Product updated successfully' });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message, msg: 'Error updating product' });
+  }
 };
 
 
@@ -77,6 +79,9 @@ const remove = async (req = request, res = response) => {
     } catch (error) {
         res.status(500).json({ ok: false, error, msg: 'Error deleting product' });
     }
+    console.log("FILE:", req.file);
+    console.log("BODY:", req.body);
+
 };
 
 export const productController = {

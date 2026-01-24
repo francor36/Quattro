@@ -17,7 +17,7 @@ productRoutes.post(
   "/products",
   authMiddleware,         
   isAdmin,                
-  upload.single("file"),
+  upload.single("image"),
   validateBody(createProductSchema),
   productController.create
 );
@@ -31,10 +31,14 @@ productRoutes.get('/products/:id',
   productController.findOne
 );
 
-productRoutes.put('/products/:id',
+productRoutes.put(
+  '/products/:id',
+  authMiddleware,
+  isAdmin,
+  upload.single('file'), // <- para subir la nueva imagen
   validateParams(idParamSchema),
   validateBody(updateProductSchema),
-  authMiddleware, productController.update
+  productController.update
 );
 
 productRoutes.delete('/products/:id',
