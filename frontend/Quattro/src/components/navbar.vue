@@ -1,20 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import CarritoIcono from './carritoIcono.vue';
+import LoginRegistroModal from './Login.vue';
 
-const usuarioLogueado = ref(false);
-const nombreUsuario = ref('');
+const authStore = useAuthStore();
+const mostrarLogin = ref(false);
 
-const handleLogin = () => {
-  // TODO: Implementar lógica de login
-  console.log('Abrir modal de login');
-  // router.push('/login');
+const abrirLogin = () => {
+  mostrarLogin.value = true;
+};
+
+const cerrarLogin = () => {
+  mostrarLogin.value = false;
 };
 
 const handleLogout = () => {
-  usuarioLogueado.value = false;
-  nombreUsuario.value = '';
-  console.log('Usuario deslogueado');
+  authStore.logout();
 };
+
+onMounted(() => {
+  authStore.cargarSesion();
+});
 </script>
 
 <template>
@@ -45,6 +52,16 @@ const handleLogout = () => {
             >
                 Productos
             </router-link>
+
+            <!-- Link de Admin (solo visible para admins) -->
+            <router-link 
+                v-if="authStore.esAdmin"
+                to="/admin" 
+                class="text-[#fff1da] hover:bg-[#fff1da] hover:text-[#0e516c] font-bold transition-colors duration-200 rounded-4xl p-4 text-xl"
+                active-class="text-[#ffcc00]"
+            >
+                Panel Admin
+            </router-link>
             
             <router-link 
                 to="/nosotros" 
@@ -62,10 +79,13 @@ const handleLogout = () => {
                 Contacto
             </router-link>
 
+            <!-- Ícono del carrito -->
+            <CarritoIcono />
+
             <!-- Botón de Login / Usuario -->
-            <div v-if="!usuarioLogueado" class="pr-10">
+            <div v-if="!authStore.estaAutenticado" class="pr-10">
                 <button 
-                    @click="handleLogin"
+                    @click="abrirLogin"
                     class="flex items-center gap-2 bg-[#fff1da] text-[#0e516c] hover:bg-[#0e516c] hover:text-[#fff1da] font-bold transition-all duration-200 rounded-full px-6 py-3 border-2 border-[#fff1da]"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -76,17 +96,29 @@ const handleLogout = () => {
                 </button>
             </div>
 
+            <!-- Menú de usuario logueado -->
             <div v-else class="relative pr-10">
-                <button 
-                    class="flex items-center gap-2 bg-[#fff1da] text-[#0e516c] hover:bg-[#0e516c] hover:text-[#fff1da] font-bold transition-all duration-200 rounded-full px-6 py-3 border-2 border-[#fff1da]"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    <span>{{ nombreUsuario || 'Usuario' }}</span>
-                </button>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-[#fff1da] font-bold text-sm">{{ authStore.nombreCompleto }}</p>
+                        <p class="text-[#fff1da] text-xs opacity-75">{{ authStore.esAdmin ? 'Administrador' : 'Cliente' }}</p>
+                    </div>
+                    <button 
+                        @click="handleLogout"
+                        class="flex items-center gap-2 bg-[#fff1da] text-[#0e516c] hover:bg-red-600 hover:text-white font-bold transition-all duration-200 rounded-full px-6 py-3 border-2 border-[#fff1da]"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Salir
+                    </button>
+                </div>
             </div>
         </nav>
     </div>
+
+    <!-- Modal de Login/Registro -->
+    <LoginRegistroModal :mostrar="mostrarLogin" @cerrar="cerrarLogin" />
 </template>

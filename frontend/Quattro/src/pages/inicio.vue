@@ -2,6 +2,7 @@
 import navbar from '@/components/navbar.vue';
 import PieDePagina from '@/components/pieDePagina.vue';
 
+
 </script>
 <template>
     <div class="w-full min-h-screen flex-col bg-zinc-900 text-zinc-200 font-sans">

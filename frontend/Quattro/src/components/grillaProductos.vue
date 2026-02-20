@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from "vue";
 import ProductoCard from "@/components/productoCard.vue";
 import type { Producto } from "@/types/producto";
 import { useProductStore } from "@/stores/storeProduct";
+import { useCarritoStore } from "@/stores/carrito";
 
+const carritoStore = useCarritoStore();
 const store = useProductStore();
 
 // estados locales (se mantienen)
@@ -79,12 +81,17 @@ const verDetalle = (id: number) => {
 };
 
 const agregarCarrito = (producto: Producto) => {
-  console.log("Agregar carrito:", producto);
+  const exito = carritoStore.agregarProducto(producto, 1);
+  if (exito) {
+    carritoStore.abrirCarrito();
+  }
 };
 
 onMounted(() => {
   store.fetchProducts();
 });
+
+
 </script>
 
 <template>
@@ -133,7 +140,7 @@ onMounted(() => {
           </select>
         </div>
 
-        <!-- Filtros adicionales -->
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <!-- Precio mínimo -->
           <div>

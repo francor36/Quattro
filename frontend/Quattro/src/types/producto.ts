@@ -7,3 +7,8 @@ export interface Producto {
   stock: number;
   image?: string;
 }
+
+export interface ItemCarrito {
+  producto : Producto;
+  cantidad: number;
+}

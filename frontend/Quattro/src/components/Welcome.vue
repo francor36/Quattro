@@ -83,7 +83,7 @@
         
         <!-- Card 1: Guitarras -->
         <router-link 
-          to="/guitarras" 
+          to="productos" 
           class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden hover:-translate-y-2"
         >
           <div class="relative h-64 overflow-hidden">
@@ -123,7 +123,7 @@
 
         <!-- Card 2: Accesorios -->
         <router-link 
-          to="/accesorios" 
+          to="/productos" 
           class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden hover:-translate-y-2"
         >
           <div class="relative h-64 overflow-hidden">
