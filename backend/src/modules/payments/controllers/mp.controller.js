@@ -18,16 +18,20 @@ const BASE_URL = process.env.BASE_URL || 'https://tuproyecto.ngrok-free.dev'; //
  * Incluye logging detallado para diagnosticar errores en el pago.
  */
 export const createMpPreference = async (req, res) => {
-  console.log('Iniciando creación de preferencia para orderId:', req.body?.orderId); // Log inicial
+  // 1. Convertimos a número lo que sea que venga en el body
+  const orderId = req.body?.orderId ? Number(req.body.orderId) : null;
+  
+  console.log('Iniciando creación de preferencia para orderId:', orderId);
 
   try {
-    // Validación de entrada
-    if (!req.body || !req.body.orderId || typeof req.body.orderId !== 'number' || req.body.orderId <= 0) {
-      console.error('Validación fallida: orderId inválido');
-      return res.status(400).json({ ok: false, message: "orderId es requerido y debe ser un número positivo" });
+    // 2. Validación mejorada: verificamos que sea un número válido y mayor a 0
+    if (!orderId || isNaN(orderId) || orderId <= 0) {
+      console.error('Validación fallida: orderId inválido', { original: req.body?.orderId, convertido: orderId });
+      return res.status(400).json({ 
+        ok: false, 
+        message: "orderId es requerido y debe ser un número positivo" 
+      });
     }
-
-    const { orderId } = req.body;
 
     console.log('Buscando orden en DB...');
     const order = await Order.findOne({ where: { id: orderId } });

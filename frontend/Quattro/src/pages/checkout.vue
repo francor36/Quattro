@@ -52,7 +52,7 @@ const crearOrden = async (): Promise<number | null> => {
     throw new Error(data.message || 'Error al crear la orden');
   }
 
-  return data.order.id; // El backend devuelve { ok: true, order: { id: ... } }
+  return data.order_id; // El backend devuelve { ok: true, order: { id: ... } }
 };
 
 // PASO 2: Crear la preferencia de MercadoPago con el orderId
@@ -60,10 +60,13 @@ const crearPreferencia = async (orderId: number): Promise<string> => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (authStore.token) headers['Authorization'] = `Bearer ${authStore.token}`;
 
-  const response = await fetch(`${BASE_URL}/api/payments/mp/preference`, {
+  // CAMBIA ESTA LÍNEA:
+  // Antes: const response = await fetch(`${BASE_URL}/api/payments/mp/preference`, ...
+  
+  const response = await fetch(`${BASE_URL}/api/payments/mp`, { // ✅ Ruta corregida
     method: 'POST',
     headers,
-    body: JSON.stringify({ orderId }), // El backend espera { orderId: number }
+    body: JSON.stringify({ orderId }), 
   });
 
   const data = await response.json();
@@ -72,7 +75,7 @@ const crearPreferencia = async (orderId: number): Promise<string> => {
     throw new Error(data.message || 'Error al crear preferencia de pago');
   }
 
-  return data.init_point; // URL de MercadoPago donde se redirige al usuario
+  return data.init_point; 
 };
 
 // FUNCIÓN PRINCIPAL: orquesta los dos pasos
