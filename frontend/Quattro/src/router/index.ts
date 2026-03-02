@@ -1,23 +1,23 @@
+import GrillaProductos from '@/components/grillaProductos.vue'
+import Nosotros from '@/components/nosotros.vue'
+import welcome from '@/components/Welcome.vue'
+import Checkout from '@/pages/checkout.vue'
+import Inicio from '@/pages/inicio.vue'
+// CAMBIA ESTA LÍNEA A ESTO:
+import Contacto from '@/components/contacto.vue' 
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
+  routes: [{
+    path: '/', component: Inicio, children: [
+      {path: '/', component: welcome},
+      {path: 'productos', component: GrillaProductos},
+      {path: 'nosotros', component: Nosotros},
+      {path: 'checkout', component: Checkout},
+      {path:'contacto', component: Contacto }
+    ]
+  }],
 })
 
 export default router
