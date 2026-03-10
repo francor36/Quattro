@@ -1,219 +1,69 @@
-<script setup lang="ts">
-import type { Producto } from '@/types/producto';
-import { computed } from 'vue';
-
-const props = defineProps<{
-  producto: Producto;
-}>();
-
-const emit = defineEmits<{
-  verDetalle: [id: number];
-  agregarCarrito: [producto: Producto];
-}>();
-
-const formatoPrecio = (precio: number) => {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS'
-  }).format(precio);
-};
-
-// Verificar si tiene stock
-const tieneStock = computed(() => {
-  // Si stock es undefined, asumimos que SÍ hay stock
-  if (props.producto.stock === undefined) return true;
-  // Si stock está definido, verificamos que sea mayor a 0
-  return props.producto.stock > 0;
-});
-
-// Clase de stock bajo
-const stockBajo = computed(() => {
-  if (props.producto.stock === undefined) return false;
-  return props.producto.stock > 0 && props.producto.stock < 5;
-});
-
-const handleAgregarCarrito = () => {
-  if (tieneStock.value) {
-    emit('agregarCarrito', props.producto);
-  }
-};
-</script>
-
 <template>
   <div 
-    class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 relative"
-    :class="{ 'opacity-75': !tieneStock }"
-    style="border: 2px solid #fff1da"
+    class="group relative bg-white rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all cursor-pointer border border-[#0e516c]/5 flex flex-col h-full"
+    @click="$emit('ver-detalle', producto.id)"
   >
-    <!-- Overlay de sin stock -->
-    <div 
-      v-if="!tieneStock"
-      class="absolute inset-0 bg-black bg-opacity-40 z-10 flex items-center justify-center"
-    >
-      <div class="bg-red-600 text-white px-6 py-3 rounded-lg font-bold text-xl transform -rotate-12">
-        SIN STOCK
-      </div>
-    </div>
-
-    <!-- Imagen del producto -->
-    <div class="relative h-64 overflow-hidden" style="background-color: #f5f5f5">
-      <img 
-        v-if="producto.image" 
-        :src="producto.image" 
-        :alt="producto.name"
-        class="w-full h-full object-cover transition-transform duration-300"
-        :class="{ 'hover:scale-110': tieneStock, 'grayscale': !tieneStock }"
-      />
-      <div v-else class="w-full h-full flex items-center justify-center" style="background-color: #fff1da">
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="64" 
-          height="64" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="#0e516c" 
-          stroke-width="2"
-          :class="{ 'opacity-50': !tieneStock }"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
+    <div v-if="store.isAdmin" class="absolute top-4 right-4 flex gap-2 z-20">
+      <button 
+        @click.stop="$emit('editar', producto)" 
+        class="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform"
+        title="Editar producto"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
         </svg>
-      </div>
-      
-      <!-- Badge de stock bajo -->
-      <div 
-        v-if="stockBajo && tieneStock" 
-        class="absolute top-2 right-2 px-3 py-1 rounded-full text-xs font-bold text-white animate-pulse" 
-        style="background-color: #ff4444"
+      </button>
+      <button 
+        @click.stop="confirmarEliminar" 
+        class="bg-red-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform"
+        title="Eliminar producto"
       >
-        ¡Últimas {{ producto.stock }} unidades!
-      </div>
-
-      <!-- Badge de sin stock -->
-      <div 
-        v-if="!tieneStock" 
-        class="absolute top-2 left-2 px-3 py-1 rounded-full text-xs font-bold text-white" 
-        style="background-color: #666"
-      >
-        Agotado
-      </div>
-
-      <!-- Botón de añadir al carrito flotante -->
-      <button
-        v-if="tieneStock"
-        @click="handleAgregarCarrito"
-        class="absolute bottom-4 right-4 p-3 rounded-full shadow-lg transition-all hover:scale-110 group"
-        style="background-color: #0e516c"
-        title="Añadir al carrito"
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="24" 
-          height="24" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="#fff1da" 
-          stroke-width="2"
-          stroke-linecap="round" 
-          stroke-linejoin="round"
-          class="group-hover:scale-110 transition-transform"
-        >
-          <circle cx="8" cy="21" r="1"/>
-          <circle cx="19" cy="21" r="1"/>
-          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </button>
     </div>
 
-    <!-- Información del producto -->
-    <div class="p-4">
-      <!-- Categoría -->
-      <p 
-        v-if="producto.category" 
-        class="text-xs font-semibold mb-2 uppercase tracking-wide" 
-        :class="{ 'opacity-50': !tieneStock }"
-        style="color: #0e516c"
-      >
-        {{ producto.category }}
-      </p>
+    <div class="aspect-square overflow-hidden rounded-2xl mb-4 bg-[#fff1da]/20 flex items-center justify-center">
+       <img 
+         :src="producto.image" 
+         :alt="producto.name"
+         class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" 
+       />
+    </div>
 
-      <!-- Título -->
-      <h3 
-        class="text-lg font-bold mb-2 line-clamp-2 min-h-14" 
-        :class="{ 'opacity-70': !tieneStock }"
-        style="color: #0e516c"
-      >
-        {{ producto.name }}
-      </h3>
-
-      <!-- Descripción -->
-      <p 
-        v-if="producto.description" 
-        class="text-sm text-gray-600 mb-3 line-clamp-2"
-        :class="{ 'opacity-50': !tieneStock }"
-      >
-        {{ producto.description }}
-      </p>
-
-      <!-- Stock disponible -->
-      <div v-if="producto.stock !== undefined" class="mb-2">
-        <p v-if="tieneStock" class="text-sm font-semibold" style="color: #0e516c">
-          Stock disponible: {{ producto.stock }} unidades
-        </p>
-        <p v-else class="text-sm font-semibold text-red-600">
-          Producto agotado
-        </p>
-      </div>
-
-      <!-- Precio -->
-      <div class="flex items-center justify-between mb-4">
-        <span 
-          class="text-2xl font-bold" 
-          :class="{ 'opacity-60': !tieneStock }"
-          style="color: #0e516c"
-        >
-          {{ formatoPrecio(producto.price) }}
-        </span>
-      </div>
-
-      <!-- Botones de acción -->
-      <div class="flex flex-col gap-2">
-        <!-- Botón principal de añadir al carrito -->
+    <div class="flex flex-col flex-grow">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-[#0e516c]/40 mb-1">{{ producto.category }}</span>
+      <h3 class="text-[#0e516c] font-serif font-bold text-lg leading-tight mb-2 line-clamp-2">{{ producto.name }}</h3>
+      
+      <div class="mt-auto pt-4 flex items-center justify-between">
+        <span class="text-[#0e516c] font-bold text-xl">${{ producto.price }}</span>
+        
         <button 
-          @click="handleAgregarCarrito"
-          :disabled="!tieneStock"
-          class="w-full py-3 px-4 rounded-lg font-bold text-white transition-all flex items-center justify-center gap-2"
-          :class="tieneStock ? 'hover:opacity-90 cursor-pointer' : 'opacity-50 cursor-not-allowed'"
-          style="background-color: #0e516c"
+          @click.stop="$emit('agregar-carrito', producto)" 
+          class="bg-[#0e516c] text-[#fff1da] p-3 rounded-xl hover:bg-[#0e516c]/90 transition-colors shadow-md active:scale-90"
+          title="Añadir al carrito"
         >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="20" 
-            height="20" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            stroke-width="2"
-            stroke-linecap="round" 
-            stroke-linejoin="round"
-          >
-            <circle cx="8" cy="21" r="1"/>
-            <circle cx="19" cy="21" r="1"/>
-            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          {{ tieneStock ? 'Añadir al carrito' : 'No disponible' }}
-        </button>
-
-        <!-- Botón secundario de ver más -->
-        <button 
-          @click="emit('verDetalle', producto.id)"
-          class="w-full py-2 px-4 rounded-lg font-semibold transition-all hover:opacity-90"
-          style="background-color: #fff1da; color: #0e516c"
-        >
-          Ver detalles
         </button>
       </div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useProductStore } from "@/stores/storeProduct";
+import type { Producto } from "@/types/producto";
+
+const store = useProductStore();
+const props = defineProps<{ producto: Producto }>();
+const emit = defineEmits(['ver-detalle', 'editar', 'agregar-carrito']);
+
+const confirmarEliminar = () => {
+  if (confirm(`¿Estás seguro de que quieres eliminar "${props.producto.name}"?`)) {
+    store.deleteProduct(props.producto.id);
+  }
+};
+</script>

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
+// --- TIPOS ---
 export type RolUsuario = 'admin' | 'cliente';
 
 export interface Usuario {
@@ -28,14 +29,16 @@ export interface RegistroData {
   rol?: RolUsuario;
 }
 
+// --- CONFIGURACIÓN ---
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const useAuthStore = defineStore('auth', () => {
-  // Estado
-  const usuario = ref<Usuario | null>(null);
-  const token = ref<string | null>(null);
+  // --- ESTADO ---
+  // Inicializamos directamente desde LocalStorage para evitar parpadeos de UI
+  const usuario = ref<Usuario | null>(JSON.parse(localStorage.getItem('usuario') || 'null'));
+  const token = ref<string | null>(localStorage.getItem('token') || null);
 
-  // Getters
+  // --- GETTERS ---
   const estaAutenticado = computed(() => usuario.value !== null && token.value !== null);
   const esAdmin = computed(() => usuario.value?.rol === 'admin');
   const esCliente = computed(() => usuario.value?.rol === 'cliente');
@@ -43,7 +46,11 @@ export const useAuthStore = defineStore('auth', () => {
     usuario.value ? `${usuario.value.nombre} ${usuario.value.apellido}` : ''
   );
 
-  // Actions
+  // --- ACCIONES ---
+
+  /**
+   * Proceso de Login
+   */
   const login = async (credenciales: LoginCredenciales) => {
     try {
       const response = await fetch(`${BASE_URL}/users/login`, {
@@ -55,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json();
 
       if (response.ok && data.ok) {
-        // El backend devuelve { ok: true, token: string, user: {...} }
+        // Mapeo de la respuesta del backend
         usuario.value = {
           id: data.user.id,
           nombre: data.user.nombre,
@@ -67,6 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
         };
         token.value = data.token;
 
+        // Persistencia
         localStorage.setItem('usuario', JSON.stringify(usuario.value));
         if (token.value) localStorage.setItem('token', token.value);
 
@@ -81,6 +89,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  /**
+   * Registro de nuevo usuario
+   */
   const registro = async (datos: RegistroData) => {
     try {
       const response = await fetch(`${BASE_URL}/users/register`, {
@@ -103,6 +114,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  /**
+   * Cierre de sesión y limpieza de datos
+   */
   const logout = () => {
     usuario.value = null;
     token.value = null;
@@ -110,6 +124,9 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token');
   };
 
+  /**
+   * Cargar sesión manualmente (opcional si se inicializa en el ref)
+   */
   const cargarSesion = () => {
     const usuarioGuardado = localStorage.getItem('usuario');
     const tokenGuardado = localStorage.getItem('token');
