@@ -1,5 +1,6 @@
 import GrillaProductos from '@/components/grillaProductos.vue'
 import Nosotros from '@/components/nosotros.vue'
+import Contacto from '@/components/contacto.vue'
 import welcome from '@/components/Welcome.vue'
 import Checkout from '@/pages/checkout.vue'
 import Inicio from '@/pages/inicio.vue'
@@ -12,6 +13,7 @@ const router = createRouter({
       {path: '/', component: welcome},
       {path: 'productos', component: GrillaProductos},
       {path: 'nosotros', component: Nosotros},
+      {path: 'contacto', component: Contacto},
       {path: 'checkout', component: Checkout}
     ]
   }],
