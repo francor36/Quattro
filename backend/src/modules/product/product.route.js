@@ -9,41 +9,46 @@ import { productController } from "./product.controller.js";
 import { upload } from "../../configurations/multer.config.js";
 import authMiddleware from "../../middlewares/auth.middleware.js";
 import isAdmin from "../../middlewares/isAdmin.js";
-import { authorizeRole } from "../../middlewares/role.middleware.js";
 
 const productRoutes = Router();
 
+// ✅ CREATE (multi imágenes)
 productRoutes.post(
   "/products",
-  authMiddleware,         
-  isAdmin,                
-  upload.single("image"),
+  authMiddleware,
+  isAdmin,
+  upload.array("images", 5), // 🔥 CLAVE
   validateBody(createProductSchema),
   productController.create
 );
 
-productRoutes.get('/products',
-  productController.findAll
-);
+// ✅ GET ALL
+productRoutes.get("/products", productController.findAll);
 
-productRoutes.get('/products/:id',
+// ✅ GET ONE
+productRoutes.get(
+  "/products/:id",
   validateParams(idParamSchema),
   productController.findOne
 );
 
+// ✅ UPDATE (multi imágenes)
 productRoutes.put(
-  '/products/:id',
+  "/products/:id",
   authMiddleware,
   isAdmin,
-  upload.single('file'), // <- para subir la nueva imagen
+  upload.array("images", 5), // 🔥 CLAVE
   validateParams(idParamSchema),
   validateBody(updateProductSchema),
   productController.update
 );
 
-productRoutes.delete('/products/:id',
+// ✅ DELETE
+productRoutes.delete(
+  "/products/:id",
   validateParams(idParamSchema),
-  authMiddleware, productController.remove
+  authMiddleware,
+  productController.remove
 );
 
 export default productRoutes;

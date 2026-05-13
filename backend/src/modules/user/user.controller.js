@@ -6,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import { createUserSchema } from './schema/user.schema.js';
 
 const repository = AppDataSource.getRepository('User');
+const failedAttempts = {}; // se guardan los intententos 
+const blockedIps = {}; //se guardan las ips bloqueadas
 
 // ===================== REGISTRO =====================
 const register = async (req = request, res = response) => {
@@ -23,7 +25,7 @@ const register = async (req = request, res = response) => {
     });
 
     const io = req.app.get('io');
-    io.emit('register', { message: '¡Se registro un nuevo usuario!', user: newUser.nombre +" "+ newUser.apellido});
+    io.emit('register', { message: '¡Se registro un nuevo usuario!', user: newUser.nombre + " " + newUser.apellido });
 
     res.status(201).json({
       ok: true,
@@ -37,6 +39,24 @@ const register = async (req = request, res = response) => {
 
 // ===================== LOGIN =====================
 const login = async (req = request, res = response) => {
+  const ip = req.ip;
+  if (blockedIps[ip]) { //primero vemos si la ip esta bloqueda
+
+    const now = Date.now(); //obtenemos la marca del tiempo
+
+    if (now < blockedIps[ip]) { //Si now < blockedIps[ip] significa que el bloqueo aún está activo
+
+      return res.status(403).json({ // Devuelve error 403 Forbidden indicando que la IP está bloqueada
+        ok: false,
+        message: 'IP bloqueada',
+        retryAfterSeconds:
+          Math.floor((blockedIps[ip] - now) / 1000),
+      });
+    }
+    // Si llegamos aquí, significa que el bloqueo ya expiró
+    // Se podría agregar: delete blockedIps[ip]; para limpiar el objeto
+    delete blockedIps[ip];
+  }
   try {
     const { email, password } = req.body;
 
@@ -44,8 +64,36 @@ const login = async (req = request, res = response) => {
     if (!user) return res.status(400).json({ ok: false, message: 'User not found' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ ok: false, message: 'Invalid credentials' });
+    if (!isMatch) {
 
+      failedAttempts[ip] =
+        (failedAttempts[ip] || 0) + 1;
+
+      console.log({
+        ip,
+        attempts: failedAttempts[ip],
+        endpoint: '/users/login'
+      });
+
+      if (failedAttempts[ip] >= 3) {
+
+        blockedIps[ip] =
+          Date.now() + 60 * 1000;
+
+        failedAttempts[ip] = 0;
+
+        return res.status(403).json({
+          ok: false,
+          message: 'IP bloqueada',
+          retryAfterSeconds: 60,
+        });
+      }
+
+      return res.status(400).json({
+        ok: false,
+        message: 'Invalid credentials'
+      });
+    }
     const token = jwt.sign(
       { id: user.id, email: user.email, rol: user.rol },
       envs.JWT_SECRET,

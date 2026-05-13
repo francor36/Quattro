@@ -8,27 +8,15 @@ const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads")); // Carpeta destino
+    cb(null, path.join(__dirname, "../uploads"));
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const uniqueName = uuidv4() + ext;
-    cb(null, uniqueName);
+    cb(null, uuidv4() + ext);
   },
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowed = /jpeg|jpg|png|gif/;
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.test(ext)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Solo se permiten imágenes (.jpeg, .jpg, .png, .gif)"));
-  }
-};
-
 export const upload = multer({
   storage,
-  fileFilter,
-  limits: { fileSize: 2 * 1024 * 1024 }, // Límite: 2MB
+  limits: { fileSize: 5 * 1024 * 1024 },
 });

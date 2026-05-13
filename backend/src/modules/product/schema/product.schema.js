@@ -6,16 +6,21 @@ export const createProductSchema = joi.object({
     price: joi.number().required(),
     category: joi.string().required(),
     stock: joi.number().required(),
-    image: joi.string().optional(),
+
+    // 🔥 CAMBIO
+    images: joi.array().items(joi.string()).optional()
 });
 
 export const updateProductSchema = joi.object({
     name: joi.string(),
-    description: joi.string().optional(),
+    description: joi.string().allow('').optional(),
     price: joi.number(),
     category: joi.string(),
-    stock: joi.number()
-})
+    stock: joi.number(),
+
+    // 🔥 CAMBIO
+    images: joi.array().items(joi.string()).optional()
+});
 
 export const idParamSchema = joi.object({
   id: joi.string().required()

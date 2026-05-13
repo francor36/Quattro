@@ -8,70 +8,73 @@ const client = new MercadoPagoConfig({
 const preference = new Preference(client);
 const Order = AppDataSource.getRepository("Order");
 
-// Constantes para mantenibilidad
 const ORDER_STATUSES = { PAID: 'paid' };
-const BASE_URL = process.env.BASE_URL || 'https://tuproyecto.ngrok-free.dev'; // Cambia a dominio real en prod
 
-/**
- * Crea una preferencia de pago en MercadoPago para una orden.
- * Verifica que la orden exista, no esté pagada, no tenga preferencia previa y tenga un monto válido.
- * Incluye logging detallado para diagnosticar errores en el pago.
- */
+// 🔥 IMPORTANTE: usar SIEMPRE el mismo dominio
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'; // backend
+
 export const createMpPreference = async (req, res) => {
-  // 1. Convertimos a número lo que sea que venga en el body
   const orderId = req.body?.orderId ? Number(req.body.orderId) : null;
-  
+
   console.log('Iniciando creación de preferencia para orderId:', orderId);
 
   try {
-    // 2. Validación mejorada: verificamos que sea un número válido y mayor a 0
+    // ✅ Validación
     if (!orderId || isNaN(orderId) || orderId <= 0) {
-      console.error('Validación fallida: orderId inválido', { original: req.body?.orderId, convertido: orderId });
-      return res.status(400).json({ 
-        ok: false, 
-        message: "orderId es requerido y debe ser un número positivo" 
+      return res.status(400).json({
+        ok: false,
+        message: "orderId inválido"
       });
     }
 
-    console.log('Buscando orden en DB...');
+    // ✅ Buscar orden
     const order = await Order.findOne({ where: { id: orderId } });
 
     if (!order) {
-      console.error('Orden no encontrada:', orderId);
-      return res.status(404).json({ ok: false, message: "Orden no encontrada" });
+      return res.status(404).json({
+        ok: false,
+        message: "Orden no encontrada"
+      });
     }
 
-    console.log('Orden encontrada:', { id: order.id, status: order.status, total_amount: order.total_amount });
+    console.log('Orden encontrada:', order);
 
-    // Verificar si ya está pagada
+    // ✅ Verificar estado
     if (order.status === ORDER_STATUSES.PAID) {
-      console.warn('Orden ya pagada, rechazando:', orderId);
       return res.status(400).json({
         ok: false,
-        message: "La orden ya fue pagada",
+        message: "La orden ya fue pagada"
       });
     }
 
-    // Verificar idempotencia: si ya tiene preferencia
     if (order.mp_preference_id) {
-      console.warn('Ya existe preferencia para orden:', orderId, 'ID:', order.mp_preference_id);
       return res.status(400).json({
         ok: false,
-        message: "Ya existe una preferencia para esta orden",
+        message: "Ya existe preferencia"
       });
     }
 
-    // Validar y convertir monto de la orden a número
+    // ✅ Validar monto
     const amount = parseFloat(order.total_amount);
-    if (isNaN(amount) || !isFinite(amount) || amount <= 0) {
-      console.error('Monto inválido en orden:', order.total_amount, 'Convertido a:', amount);
-      return res.status(400).json({ ok: false, message: "El monto de la orden debe ser un número positivo válido" });
+
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "Monto inválido"
+      });
     }
 
     console.log('Monto validado:', amount);
 
-    // Crear preferencia en MercadoPago
-    console.log('Creando preferencia en MercadoPago...');
+    // 🔥 DEBUG CLAVE
+    console.log("BACK URLS:", {
+      success: `${FRONTEND_URL}/success`,
+      failure: `${FRONTEND_URL}/failure`,
+      pending: `${FRONTEND_URL}/pending`,
+    });
+
+    // ✅ Crear preferencia
     let response;
     try {
       response = await preference.create({
@@ -80,46 +83,57 @@ export const createMpPreference = async (req, res) => {
             {
               title: `Orden #${order.id}`,
               quantity: 1,
-              unit_price: amount, // Ahora es un número válido
+              unit_price: amount,
             },
           ],
           external_reference: String(order.id),
+
+          // 🔥 CORREGIDO
           back_urls: {
-            success: `${BASE_URL}/success`,
-            failure: `${BASE_URL}/failure`,
-            pending: `${BASE_URL}/pending`,
+            success: `${FRONTEND_URL}/success`,
+            failure: `${FRONTEND_URL}/failure`,
+            pending: `${FRONTEND_URL}/pending`,
           },
-          auto_return: "approved",
+
+
+
+          // webhook → backend (esto sí va en BASE_URL)
           notification_url: `${BASE_URL}/api/payments/mp/webhook`,
         },
+        auto_return: "approved",
       });
-      console.log('Preferencia creada exitosamente en MP:', { id: response.id, init_point: response.init_point });
+
+      console.log('Preferencia creada:', response.id);
+
     } catch (mpError) {
-      console.error('Error creando preferencia en MercadoPago:', mpError.message, 'Detalles:', mpError.response?.data || mpError);
-      return res.status(500).json({ ok: false, message: "Error al crear preferencia en MercadoPago. Revisa el token y URLs." });
+      console.error(
+        'ERROR REAL MP:',
+        mpError.response?.data || mpError.message
+      );
+
+      return res.status(500).json({
+        ok: false,
+        message: "Error real de MercadoPago",
+        error: mpError.response?.data || mpError.message
+      });
     }
 
-    // Actualizar orden en DB
-    console.log('Actualizando orden en DB con preference_id...');
-    try {
-      order.mp_preference_id = response.id;
-      await Order.save(order);
-      console.log('Orden actualizada exitosamente:', orderId);
-    } catch (dbError) {
-      console.error('Error guardando orden en DB:', dbError.message);
-      return res.status(500).json({ ok: false, message: "Preferencia creada en MP, pero error al guardar en DB. Contacta soporte." });
-    }
+    // ✅ Guardar en DB
+    order.mp_preference_id = response.id;
+    await Order.save(order);
 
-    // Respuesta exitosa
-    console.log('Respuesta enviada al cliente:', { ok: true, preference_id: response.id });
-    res.json({
+    // ✅ Respuesta
+    return res.json({
       ok: true,
-      init_point: response.init_point, // Ahora siempre usa init_point (producción)
-      preference_id: response.id, // Para referencia
+      init_point: response.init_point,
+      preference_id: response.id,
     });
 
   } catch (error) {
-    console.error('Error general en createMpPreference:', error.message, 'Stack:', error.stack);
-    res.status(500).json({ ok: false, message: "Error interno del servidor" });
+    console.error('Error general:', error);
+    return res.status(500).json({
+      ok: false,
+      message: "Error interno del servidor"
+    });
   }
 };

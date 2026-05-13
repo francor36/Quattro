@@ -88,7 +88,7 @@ onMounted(() => {
               :pagination="{ clickable: true }"
               :navigation="true"
               effect="fade"
-              class="rounded-2xl shadow-2xl overflow-hidden aspect-[4/5]"
+              class="rounded-2xl shadow-2xl overflow-hidden aspect-4/5"
             >
               <swiper-slide v-for="(img, index) in heroImages" :key="index">
                 <img 

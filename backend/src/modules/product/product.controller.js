@@ -3,91 +3,155 @@ import AppDataSource from "../../providers/datasource.provider.js";
 
 const repository = AppDataSource.getRepository("Product");
 
+// ✅ CREATE
 const create = async (req = request, res = response) => {
-    try {
-        const product = req.body;
-        console.log(req.file);  // <--- ESTA LÍNEA TE DICE TODO
-        console.log(req.body);
-        // Si hay imagen subida, se agrega al producto
-        if (req.file) {
-            product.image = `/uploads/${req.file.filename}`;
-        }
+  try {
+    const product = req.body;
 
-        const newProduct = await repository.save(product);
+    console.log("FILES:", req.files);
+    console.log("BODY:", req.body);
 
-        const io = req.app.get('io');
-        io.emit('producto_creado', { message: '¡Se creo un producto nuevo!', product: newProduct });
-
-        res.status(201).json({ ok: true, result: newProduct, msg: "Producto creado correctamente", });
-    } catch (error) {
-        res.status(400).json({ ok: false, error: error.message, msg: "Error al crear el producto", });
+    // 🔥 múltiples imágenes
+    if (req.files && req.files.length > 0) {
+      product.images = req.files.map(file => `/uploads/${file.filename}`);
     }
+
+    const newProduct = await repository.save(product);
+
+    const io = req.app.get('io');
+    io.emit('producto_creado', {
+      message: '¡Se creó un producto nuevo!',
+      product: newProduct
+    });
+
+    res.status(201).json({
+      ok: true,
+      result: newProduct,
+      msg: "Producto creado correctamente"
+    });
+
+  } catch (error) {
+    res.status(400).json({
+      ok: false,
+      error: error.message,
+      msg: "Error al crear el producto"
+    });
+  }
 };
 
+// ✅ FIND ALL
 const findAll = async (req = request, res = response) => {
-    try {
-        const products = await repository.find();
-        res.status(200).json({ ok: true, result: products, msg: 'Products retrieved successfully' });
-    } catch (error) {
-        res.status(500).json({ ok: false, error: error.message, msg: 'Error retrieving products' });
-    }
+  try {
+    const products = await repository.find();
+
+    res.status(200).json({
+      ok: true,
+      result: products,
+      msg: 'Productos obtenidos correctamente'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: error.message,
+      msg: 'Error al obtener productos'
+    });
+  }
 };
 
-
+// ✅ FIND ONE (corregido)
 const findOne = async (req = request, res = response) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        const product = await repository.findBy({ id: id });
-        if (!product) {
-            return res.status(404).json({ ok: false, msg: 'Product not found' });
-        }
-        res.status(200).json({ ok: true, result: product, msg: 'Product retrieved successfully' });
-    } catch (error) {
-        res.status(500).json({ ok: false, error, msg: 'Error retrieving product' });
+  try {
+    const product = await repository.findOneBy({ id: Number(id) });
+
+    if (!product) {
+      return res.status(404).json({
+        ok: false,
+        msg: 'Producto no encontrado'
+      });
     }
+
+    res.status(200).json({
+      ok: true,
+      result: product,
+      msg: 'Producto obtenido correctamente'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: error.message,
+      msg: 'Error al obtener producto'
+    });
+  }
 };
 
-
+// ✅ UPDATE (MULTI IMÁGENES)
 const update = async (req = request, res = response) => {
   const { id } = req.params;
   const updates = req.body;
 
   try {
-    // Si se sube una nueva imagen
-    if (req.file) {
-      updates.image = req.file.filename;
+    // 🔥 múltiples imágenes nuevas
+    if (req.files && req.files.length > 0) {
+      updates.images = req.files.map(file => `/uploads/${file.filename}`);
     }
 
-    const updatedProduct = await repository.update(id, updates);
-    res.status(200).json({ ok: true, result: updatedProduct, msg: 'Product updated successfully' });
+    await repository.update(id, updates);
+
+    const updatedProduct = await repository.findOneBy({ id: Number(id) });
+
+    res.status(200).json({
+      ok: true,
+      result: updatedProduct,
+      msg: 'Producto actualizado correctamente'
+    });
+
   } catch (error) {
-    res.status(400).json({ ok: false, error: error.message, msg: 'Error updating product' });
+    res.status(400).json({
+      ok: false,
+      error: error.message,
+      msg: 'Error al actualizar producto'
+    });
   }
 };
 
-
+// ✅ DELETE
 const remove = async (req = request, res = response) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        const deletedProduct = await repository.delete(id);
-        if (!deletedProduct) {
-            return res.status(404).json({ ok: false, msg: 'Product not found' });
-        }
-        res.status(200).json({ ok: true, result: deletedProduct, msg: 'Product deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ ok: false, error, msg: 'Error deleting product' });
+  try {
+    const product = await repository.findOneBy({ id: Number(id) });
+
+    if (!product) {
+      return res.status(404).json({
+        ok: false,
+        msg: 'Producto no encontrado'
+      });
     }
-    console.log("FILE:", req.file);
-    console.log("BODY:", req.body);
 
+    await repository.delete(id);
+
+    res.status(200).json({
+      ok: true,
+      msg: 'Producto eliminado correctamente'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: error.message,
+      msg: 'Error al eliminar producto'
+    });
+  }
 };
 
 export const productController = {
-    create,
-    findAll,
-    findOne,
-    update,
-    remove
+  create,
+  findAll,
+  findOne,
+  update,
+  remove
 };

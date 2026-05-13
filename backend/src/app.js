@@ -9,10 +9,19 @@ import passport from './configurations/passport.js';
 import cartRoutes from './modules/cart/cart.route.js';
 import orderRoutes from "./modules/order/orders.routes.js";
 import mpRoutes from "./modules/payments/routes/mp.routes.js";
+import rateLimit from 'express-rate-limit';
 const app = express();
+const globalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 100,
+    message: {
+        message: 'Demasiadas requests'
+    }
+});
 
 app.use(cors());
 app.use(express.json());
+app.use(globalLimiter);
 
 app.use((req, res, next) => {
     req.io = req.app.get('io')

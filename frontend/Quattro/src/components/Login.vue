@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
+import VueRecaptcha from 'vue3-recaptcha2'; // ← Sin llaves
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -18,6 +19,7 @@ const modo = ref<'login' | 'registro'>('login');
 const cargando = ref(false);
 const error = ref('');
 const exito = ref('');
+const captchaToken = ref('');
 
 // Formulario de login
 const loginForm = ref({
@@ -42,12 +44,18 @@ const handleLogin = async () => {
     return;
   }
 
+  if (!captchaToken.value) {
+    error.value = 'Completá el captcha';
+    return;
+  }
+
   cargando.value = true;
   error.value = '';
 
   const resultado = await authStore.login({
     email: loginForm.value.email,
-    password: loginForm.value.password
+    password: loginForm.value.password,
+    captchaToken: captchaToken.value
   });
 
   cargando.value = false;
@@ -55,11 +63,6 @@ const handleLogin = async () => {
   if (resultado.success) {
     emit('cerrar');
     limpiarFormularios();
-    
-    // Redirigir según rol
-    if (authStore.esAdmin) {
-      router.push('/admin');
-    }
   } else {
     error.value = resultado.error || 'Error al iniciar sesión';
   }
@@ -124,6 +127,7 @@ const limpiarFormularios = () => {
   };
   error.value = '';
   exito.value = '';
+  captchaToken.value = '';
 };
 
 const cerrarModal = () => {
@@ -136,28 +140,29 @@ const cambiarModo = () => {
   modo.value = modo.value === 'login' ? 'registro' : 'login';
   error.value = '';
   exito.value = '';
+  captchaToken.value = '';
+};
+
+const onCaptchaVerified = (response: string) => {
+  captchaToken.value = response;
+};
+
+const onCaptchaExpired = () => {
+  captchaToken.value = '';
 };
 </script>
 
 <template>
-  <div 
-    v-if="mostrar"
-    @click="cerrarModal"
-    class="fixed inset-0 backdrop-blur-md z-50 flex items-center justify-center p-4"
-  >
-    <div 
-      @click.stop
-      class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative max-h-[90vh] overflow-y-auto"
-      style="border: 3px solid #0e516c"
-    >
+  <div v-if="mostrar" @click="cerrarModal"
+    class="fixed inset-0 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div @click.stop class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative max-h-[90vh] overflow-y-auto"
+      style="border: 3px solid #0e516c">
       <!-- Botón cerrar -->
-      <button 
-        @click="cerrarModal"
-        class="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0e516c" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
+      <button @click="cerrarModal" class="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0e516c"
+          stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
 
@@ -175,25 +180,24 @@ const cambiarModo = () => {
       <form v-if="modo === 'login'" @submit.prevent="handleLogin" class="space-y-4">
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Email</label>
-          <input
-            v-model="loginForm.email"
-            type="email"
-            placeholder="tu@email.com"
-            class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2"
-            style="border-color: #0e516c"
-            required
-          />
+          <input v-model="loginForm.email" type="email" placeholder="tu@email.com"
+            class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2" style="border-color: #0e516c"
+            required />
         </div>
 
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Contraseña</label>
-          <input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="••••••••"
-            class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2"
-            style="border-color: #0e516c"
-            required
+          <input v-model="loginForm.password" type="password" placeholder="••••••••"
+            class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2" style="border-color: #0e516c"
+            required />
+        </div>
+
+        <!-- CAPTCHA -->
+        <div class="flex justify-center">
+          <vue-recaptcha 
+            sitekey="6Le4becsAAAAAObULpxlwISIl-D8B0TkDD_dRfIf" 
+            @verify="onCaptchaVerified"
+            @expired="onCaptchaExpired"
           />
         </div>
 
@@ -203,12 +207,9 @@ const cambiarModo = () => {
         </div>
 
         <!-- Botón login -->
-        <button
-          type="submit"
-          :disabled="cargando"
+        <button type="submit" :disabled="cargando"
           class="w-full py-3 rounded-lg font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
-          style="background-color: #0e516c"
-        >
+          style="background-color: #0e516c">
           {{ cargando ? 'Iniciando...' : 'Ingresar' }}
         </button>
       </form>
@@ -218,84 +219,44 @@ const cambiarModo = () => {
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Nombre *</label>
-            <input
-              v-model="registroForm.nombre"
-              type="text"
-              placeholder="Juan"
-              class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-              style="border-color: #0e516c"
-              required
-            />
+            <input v-model="registroForm.nombre" type="text" placeholder="Juan"
+              class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" required />
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Apellido *</label>
-            <input
-              v-model="registroForm.apellido"
-              type="text"
-              placeholder="García"
-              class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-              style="border-color: #0e516c"
-              required
-            />
+            <input v-model="registroForm.apellido" type="text" placeholder="García"
+              class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" required />
           </div>
         </div>
 
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Email *</label>
-          <input
-            v-model="registroForm.email"
-            type="email"
-            placeholder="tu@email.com"
-            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-            style="border-color: #0e516c"
-            required
-          />
+          <input v-model="registroForm.email" type="email" placeholder="tu@email.com"
+            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" required />
         </div>
 
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Contraseña *</label>
-          <input
-            v-model="registroForm.password"
-            type="password"
-            placeholder="••••••••"
-            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-            style="border-color: #0e516c"
-            required
-          />
+          <input v-model="registroForm.password" type="password" placeholder="••••••••"
+            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" required />
         </div>
 
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Confirmar contraseña *</label>
-          <input
-            v-model="registroForm.confirmarPassword"
-            type="password"
-            placeholder="••••••••"
-            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-            style="border-color: #0e516c"
-            required
-          />
+          <input v-model="registroForm.confirmarPassword" type="password" placeholder="••••••••"
+            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" required />
         </div>
 
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Teléfono</label>
-          <input
-            v-model="registroForm.telefono"
-            type="tel"
-            placeholder="+54 299 123 4567"
-            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-            style="border-color: #0e516c"
-          />
+          <input v-model="registroForm.telefono" type="tel" placeholder="+54 299 123 4567"
+            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" />
         </div>
 
         <div>
           <label class="block text-sm font-semibold mb-2" style="color: #0e516c">Dirección</label>
-          <input
-            v-model="registroForm.direccion"
-            type="text"
-            placeholder="Calle 123, Ciudad"
-            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"
-            style="border-color: #0e516c"
-          />
+          <input v-model="registroForm.direccion" type="text" placeholder="Calle 123, Ciudad"
+            class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none" style="border-color: #0e516c" />
         </div>
 
         <!-- Mensajes -->
@@ -308,23 +269,16 @@ const cambiarModo = () => {
         </div>
 
         <!-- Botón registro -->
-        <button
-          type="submit"
-          :disabled="cargando"
+        <button type="submit" :disabled="cargando"
           class="w-full py-3 rounded-lg font-bold text-white transition-all hover:opacity-90 disabled:opacity-50"
-          style="background-color: #0e516c"
-        >
+          style="background-color: #0e516c">
           {{ cargando ? 'Registrando...' : 'Registrarse' }}
         </button>
       </form>
 
       <!-- Cambiar entre login y registro -->
       <div class="mt-6 text-center">
-        <button
-          @click="cambiarModo"
-          class="text-sm font-semibold hover:underline"
-          style="color: #0e516c"
-        >
+        <button @click="cambiarModo" class="text-sm font-semibold hover:underline" style="color: #0e516c">
           {{ modo === 'login' ? '¿No tenés cuenta? Registrate' : '¿Ya tenés cuenta? Iniciá sesión' }}
         </button>
       </div>

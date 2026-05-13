@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useCarritoStore } from '@/stores/carrito';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
@@ -10,28 +10,28 @@ const router = useRouter();
 
 const cargando = ref(false);
 const error = ref('');
-const paso = ref<'formulario' | 'procesando' | 'error'>('formulario');
-
-// Pre-llenar si está logueado
-const formulario = ref({
-  nombre: authStore.usuario?.nombre || '',
-  email: authStore.usuario?.email || '',
-});
+const mostrarModalLogin = ref(false);
+const paso = ref<'normal' | 'procesando' | 'error'>('normal');
 
 const formatoPrecio = (precio: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(precio);
 
-const BASE_URL = 'http://localhost:3000'; // Cambiar por tu URL real
+const BASE_URL = 'http://localhost:3000';
 
-// PASO 1: Crear la orden en el backend
+// Crear orden usando datos del usuario logueado
 const crearOrden = async (): Promise<number | null> => {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (authStore.token) headers['Authorization'] = `Bearer ${authStore.token}`;
+  if (!authStore.token || !authStore.usuario) {
+    throw new Error('Usuario no autenticado');
+  }
+
+  const headers: Record<string, string> = { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authStore.token}`
+  };
 
   const body = {
-    nombre_cliente: formulario.value.nombre,
-    email_cliente: formulario.value.email,
-    // Armamos los detalles según la entidad Order del backend
+    nombre_cliente: authStore.usuario.nombre,
+    email_cliente: authStore.usuario.email,
     items: carritoStore.items.map(item => ({
       product_id: item.producto.id,
       quantity: item.cantidad,
@@ -52,21 +52,20 @@ const crearOrden = async (): Promise<number | null> => {
     throw new Error(data.message || 'Error al crear la orden');
   }
 
-  return data.order_id; // El backend devuelve { ok: true, order: { id: ... } }
+  return data.order_id;
 };
 
-// PASO 2: Crear la preferencia de MercadoPago con el orderId
+// Crear preferencia de MercadoPago
 const crearPreferencia = async (orderId: number): Promise<string> => {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (authStore.token) headers['Authorization'] = `Bearer ${authStore.token}`;
+  const headers: Record<string, string> = { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authStore.token!}`
+  };
 
-  // CAMBIA ESTA LÍNEA:
-  // Antes: const response = await fetch(`${BASE_URL}/api/payments/mp/preference`, ...
-  
-  const response = await fetch(`${BASE_URL}/api/payments/mp`, { // ✅ Ruta corregida
+  const response = await fetch(`${BASE_URL}/api/payments/mp`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ orderId }), 
+    body: JSON.stringify({ orderId }),
   });
 
   const data = await response.json();
@@ -75,13 +74,20 @@ const crearPreferencia = async (orderId: number): Promise<string> => {
     throw new Error(data.message || 'Error al crear preferencia de pago');
   }
 
-  return data.init_point; 
+  return data.init_point;
 };
 
-// FUNCIÓN PRINCIPAL: orquesta los dos pasos
+// Ir al login
+const irAlLogin = () => {
+  mostrarModalLogin.value = false;
+  router.push({ name: 'login', query: { redirect: '/checkout' } });
+};
+
+// FUNCIÓN PRINCIPAL: Verifica login al hacer clic
 const confirmarCompra = async () => {
-  if (!formulario.value.nombre || !formulario.value.email) {
-    error.value = 'Por favor completá todos los campos';
+  // 🔒 VERIFICACIÓN INMEDIATA: ¿Está logueado?
+  if (!authStore.token || !authStore.usuario?.nombre || !authStore.usuario?.email) {
+    mostrarModalLogin.value = true;
     return;
   }
 
@@ -95,16 +101,13 @@ const confirmarCompra = async () => {
   paso.value = 'procesando';
 
   try {
-    // Paso 1: Crear orden
     const orderId = await crearOrden();
     if (!orderId) throw new Error('No se pudo crear la orden');
 
-    // Paso 2: Crear preferencia MP
     const initPoint = await crearPreferencia(orderId);
 
-    // Paso 3: Vaciar carrito y redirigir a MercadoPago
     carritoStore.vaciarCarrito();
-    window.location.href = initPoint; // Redirige al checkout de MP
+    window.location.href = initPoint;
 
   } catch (err: any) {
     console.error('Error en checkout:', err);
@@ -118,119 +121,177 @@ const confirmarCompra = async () => {
 
 <template>
   <div class="min-h-screen font-serif py-12 px-4" style="background-color: #fff1da">
-    <div class="max-w-5xl mx-auto">
-      <h1 class="text-4xl font-bold mb-8" style="color: #0e516c">Finalizar Compra</h1>
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-4xl font-bold mb-12 text-center" style="color: #0e516c">Finalizar Compra</h1>
 
-      <!-- Estado: Procesando -->
-      <div v-if="paso === 'procesando'" class="flex flex-col items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-4 mb-6" style="border-color: #0e516c"></div>
-        <p class="text-xl font-semibold" style="color: #0e516c">Preparando tu pago...</p>
-        <p class="text-gray-600 mt-2">Serás redirigido a MercadoPago</p>
+      <!-- ✅ MODAL: Solo aparece al hacer clic en "Pagar" sin estar logueado -->
+      <Transition name="fade">
+        <div
+          v-if="mostrarModalLogin"
+          class="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50"
+          @click.self="mostrarModalLogin = false"
+        >
+          <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-in zoom-in-95 duration-200" style="border: 3px solid #0e516c">
+            <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-red-50" style="border: 3px solid #dc2626">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-3" style="color: #0e516c">¡Iniciá sesión primero!</h2>
+            <p class="text-gray-600 mb-8 text-lg leading-relaxed">
+              Necesitás estar logueado para poder pagar con MercadoPago.
+            </p>
+
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Procesando -->
+      <div v-if="paso === 'procesando'" class="flex flex-col items-center justify-center py-24">
+        <div class="animate-spin rounded-full h-20 w-20 border-b-4 mb-8" style="border-color: #0e516c"></div>
+        <p class="text-2xl font-bold mb-2" style="color: #0e516c">Preparando pago seguro...</p>
+        <p class="text-lg text-gray-600">Redirigiendo a MercadoPago</p>
       </div>
 
-      <!-- Estado: Error -->
-      <div v-else-if="paso === 'error'" class="text-center py-20">
-        <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-red-100">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+      <!-- Error -->
+      <div v-else-if="paso === 'error'" class="text-center py-20 max-w-lg mx-auto">
+        <div class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 bg-red-100">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
             <line x1="15" y1="9" x2="9" y2="15"/>
             <line x1="9" y1="9" x2="15" y2="15"/>
           </svg>
         </div>
-        <p class="text-xl font-semibold text-red-600 mb-2">Hubo un problema</p>
-        <p class="text-gray-600 mb-6">{{ error }}</p>
+        <h2 class="text-2xl font-bold mb-4 text-red-600">Error en el pago</h2>
+        <p class="text-gray-600 mb-8 text-lg">{{ error }}</p>
         <button
-          @click="paso = 'formulario'; error = ''"
-          class="px-8 py-3 rounded-lg font-bold text-white"
-          style="background-color: #0e516c"
+          @click="paso = 'normal'; error = ''"
+          class="px-12 py-4 rounded-xl font-bold text-xl text-white shadow-lg hover:shadow-xl transition-all"
+          style="background: linear-gradient(135deg, #0e516c 0%, #1e6b8a 100%)"
         >
-          Intentar de nuevo
+          Intentar nuevamente
         </button>
       </div>
 
-      <!-- Estado: Formulario -->
-      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        <!-- Datos del cliente -->
-        <div class="bg-white rounded-2xl shadow-lg p-8" style="border: 2px solid #0e516c">
-          <h2 class="text-2xl font-bold mb-6" style="color: #0e516c">Tus datos</h2>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-semibold mb-2" style="color: #0e516c">
-                Nombre completo
-              </label>
-              <input
-                v-model="formulario.nombre"
-                type="text"
-                placeholder="Juan García"
-                class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2"
-                style="border-color: #0e516c"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2" style="color: #0e516c">
-                Email
-              </label>
-              <input
-                v-model="formulario.email"
-                type="email"
-                placeholder="tu@email.com"
-                class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2"
-                style="border-color: #0e516c"
-              />
-            </div>
-          </div>
-
-          <div v-if="error" class="mt-4 p-3 bg-red-50 border-2 border-red-500 rounded-lg">
-            <p class="text-red-600 text-sm font-semibold">{{ error }}</p>
-          </div>
-
-          <button
-            @click="confirmarCompra"
-            :disabled="cargando"
-            class="w-full mt-6 py-4 rounded-lg font-bold text-xl text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-3"
-            style="background-color: #0e516c"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-              <line x1="1" y1="10" x2="23" y2="10"/>
-            </svg>
-            Pagar con MercadoPago
-          </button>
-
-          <p class="text-xs text-gray-500 text-center mt-3">
-            Serás redirigido al sitio seguro de MercadoPago
-          </p>
-        </div>
-
-        <!-- Resumen del carrito -->
-        <div class="bg-white rounded-2xl shadow-lg p-8" style="border: 2px solid #0e516c">
-          <h2 class="text-2xl font-bold mb-6" style="color: #0e516c">Tu pedido</h2>
-          <div class="space-y-3 mb-6">
+      <!-- ✅ VISTA PRINCIPAL: Solo productos con foto pequeña -->
+      <div v-else class="space-y-8">
+        
+        <!-- ✅ Lista de productos con foto pequeña -->
+        <div class="bg-white rounded-2xl shadow-xl p-8" style="border: 2px solid #0e516c">
+          <h2 class="text-3xl font-bold mb-8 text-center" style="color: #0e516c">Tu pedido</h2>
+          
+          <div class="space-y-6">
             <div
               v-for="item in carritoStore.items"
               :key="item.producto.id"
-              class="flex justify-between items-center pb-3 border-b"
+              class="flex items-center gap-6 p-6 bg-gray-50/50 rounded-xl hover:shadow-md transition-all border"
               style="border-color: #fff1da"
             >
-              <div>
-                <p class="font-bold text-sm" style="color: #0e516c">{{ item.producto.name }}</p>
-                <p class="text-xs text-gray-500">x{{ item.cantidad }} — {{ formatoPrecio(item.producto.price) }} c/u</p>
+              <!-- ✅ Foto pequeña del producto -->
+              <div class="w-20 h-20 rounded-lg overflow-hidden shadow-md flex-shrink-0 bg-white">
+                <img 
+                  :src="item.producto.image || '/placeholder-producto.jpg'" 
+                  :alt="item.producto.name"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                >
               </div>
-              <p class="font-bold" style="color: #0e516c">
-                {{ formatoPrecio(item.producto.price * item.cantidad) }}
-              </p>
+
+              <!-- Detalles -->
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-lg mb-1 truncate" style="color: #0e516c">{{ item.producto.name }}</h3>
+                <p class="text-sm text-gray-500 mb-2">x{{ item.cantidad }}</p>
+                <p class="text-2xl font-bold" style="color: #0e516c">
+                  {{ formatoPrecio(item.producto.price * item.cantidad) }}
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                  {{ formatoPrecio(item.producto.price) }} c/u
+                </p>
+              </div>
+
+              <!-- Subtotal -->
+              <div class="text-right">
+                <p class="text-2xl font-bold" style="color: #0e516c">
+                  {{ formatoPrecio(item.producto.price * item.cantidad) }}
+                </p>
+              </div>
             </div>
           </div>
-          <div class="flex justify-between items-center pt-4 border-t-2" style="border-color: #0e516c">
-            <span class="text-2xl font-bold" style="color: #0e516c">Total:</span>
-            <span class="text-2xl font-bold" style="color: #0e516c">
-              {{ formatoPrecio(carritoStore.precioTotal) }}
-            </span>
-          </div>
-        </div>
 
+          <!-- ✅ TOTAL GRANDE Y BOTÓN PRINCIPAL -->
+          <div class="mt-12 pt-8 border-t-4 border-dashed flex flex-col sm:flex-row items-center justify-between gap-6 p-8 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-2xl" style="border-color: #0e516c">
+            <div>
+              <p class="text-2xl font-bold text-center sm:text-left mb-2" style="color: #0e516c">
+                Total: {{ carritoStore.items.length }} {{ carritoStore.items.length === 1 ? 'producto' : 'productos' }}
+              </p>
+              <p class="text-sm text-gray-500 text-center sm:text-left">Impuestos incluidos</p>
+            </div>
+            
+            <button
+              @click="confirmarCompra"
+              :disabled="cargando || carritoStore.carritoVacio"
+              class="group relative px-12 py-6 rounded-2xl font-bold text-2xl text-white shadow-2xl hover:shadow-3xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-4 w-full sm:w-auto"
+              style="background: linear-gradient(135deg, #0e516c 0%, #1e6b8a 50%, #0e516c 100%); min-height: 72px"
+            >
+              <!-- Spinner si está cargando -->
+              <div v-if="cargando" class="absolute inset-0 flex items-center justify-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-white/80"></div>
+              </div>
+              
+              <!-- Icono -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:scale-110 transition-transform">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+              
+              <!-- Texto -->
+              <span class="relative z-10">
+                {{ cargando ? 'Procesando...' : 'Pagar con MercadoPago' }}
+              </span>
+              
+              <!-- Precio flotante -->
+              <div class="absolute -top-2 -right-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold shadow-lg" style="color: #0e516c">
+                {{ formatoPrecio(carritoStore.precioTotal) }}
+              </div>
+            </button>
+          </div>
+
+          <!-- Aviso de seguridad -->
+          <p class="text-center mt-8 text-sm text-gray-500 pt-6 border-t" style="border-color: #fff1da">
+            🔒 Pago 100% seguro con MercadoPago • Redirigirás al sitio oficial
+          </p>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(20px);
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+</style>
