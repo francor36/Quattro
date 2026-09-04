@@ -89,6 +89,7 @@ Utilidades	dotenv, cors, uuid, nodemon, signale
 }
 
 
+
 npm run start → desarrollo con reinicio automático
 
 npm start → producción
